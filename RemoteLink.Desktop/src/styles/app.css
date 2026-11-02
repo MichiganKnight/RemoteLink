@@ -1,0 +1,151 @@
+:root {
+    font-family: "Segoe UI", Arial, sans-serif;
+    color-scheme: dark;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #111827;
+    color: #f3f4f6;
+}
+
+button {
+    font-family: inherit;
+}
+
+.app-shell {
+    display: flex;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.app-sidebar {
+    width: 245px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    background: #17202e;
+    border-right: 1px solid #303b4b;
+    padding: 20px 12px;
+}
+
+.app-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px 28px;
+    font-size: 20px;
+    font-weight: 650;
+}
+
+.app-brand i {
+    color: #60a5fa;
+    font-size: 25px;
+}
+
+.sidebar-label {
+    padding: 0 12px 10px;
+    color: #7f8da3;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.app-navigation {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.navigation-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #b8c3d2;
+    text-align: left;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.navigation-item:hover {
+    background: #263449;
+    color: white;
+}
+
+.navigation-item.active {
+    background: #244b7c;
+    color: #ffffff;
+}
+
+.navigation-item i {
+    font-size: 17px;
+}
+
+.sidebar-footer {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-top: auto;
+    padding: 14px 12px 0;
+    border-top: 1px solid #303b4b;
+    color: #aeb9c9;
+    font-size: 12px;
+}
+
+.sidebar-footer i {
+    font-size: 9px;
+}
+
+.app-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    background: #111827;
+}
+
+.app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 23px 30px;
+    border-bottom: 1px solid #303b4b;
+}
+
+.app-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 30px;
+}
+
+.content-card {
+    background: #1d2939;
+    border: 1px solid #344154;
+    border-radius: 10px;
+    padding: 24px;
+}
+
+.feature-card {
+    min-height: 175px;
+}
+
+.feature-icon {
+    display: block;
+    color: #60a5fa;
+    font-size: 27px;
+    margin-bottom: 16px;
+}
+
+h4, h5, h6 {
+    color: #f3f4f6;
+}
