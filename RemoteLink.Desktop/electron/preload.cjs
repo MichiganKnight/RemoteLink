@@ -1,7 +1,9 @@
-const { contextBridge } = require("electron");
+const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("remoteLink", {
     platform: process.platform,
     electronVersion: process.versions.electron,
-    appName: "RemoteLink"
+    appName: "RemoteLink",
+
+    getHostStatus: () => ipcRenderer.invoke("host:get-status")
 });

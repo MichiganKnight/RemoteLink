@@ -1,5 +1,9 @@
 import { useState } from 'react'
 
+import { useHostStatus } from "./hooks/useHostStatus";
+
+import type { HostStatus } from "./types/electron";
+
 type Page = "Dashboard" | "Devices" | "Transfers" | "Chat" | "Remote" | "Settings";
 
 interface NavigationItem {
@@ -44,13 +48,15 @@ const navigation: NavigationItem[] = [
 function App() {
     const [activePage, setActivePage] = useState<Page>("Dashboard");
 
+    const { hostStatus, loading } = useHostStatus();
+
     const currentPage = navigation.find(item => item.id === activePage);
 
     return (
         <div className="app-shell">
             <aside className="app-sidebar">
                 <div className="app-brand">
-                    <i className="bi bi-pc-display-horizontal" />
+                    <i className="bi bi-pc-display-horizontal"/>
                     <span>RemoteLink</span>
                 </div>
 
@@ -61,15 +67,18 @@ function App() {
                 <nav className="app-navigation">
                     {navigation.map(item => (
                         <button key={item.id} type="button" className={"navigation-item " + (activePage === item.id ? "active" : "")} onClick={() => setActivePage(item.id)}>
-                            <i className={`bi ${item.icon}`} />
+                            <i className={`bi ${item.icon}`}/>
                             <span>{item.label}</span>
                         </button>
                     ))}
                 </nav>
 
                 <div className="sidebar-footer">
-                    <i className="bi bi-circle-fill text-secondary" />
-                    <span>Not Connected</span>
+                    <i className={"bi bi-circle-fill" + (hostStatus?.connected ? "text-success" : "text-danger")}/>
+
+                    <span>
+                        {loading ? "Checking Host..." : hostStatus?.connected ? "Host Connected" : "Host Offline"}
+                    </span>
                 </div>
             </aside>
 
@@ -92,7 +101,7 @@ function App() {
 
                 <div className="app-content">
                     {activePage === "Dashboard" ? (
-                        <Dashboard />
+                        <Dashboard hostStatus={hostStatus} loading={loading}/>
                     ) : (
                         <div className="content-card">
                             <h5>{currentPage?.label}</h5>
@@ -108,7 +117,12 @@ function App() {
     );
 }
 
-function Dashboard() {
+interface DashboardProps {
+    hostStatus: HostStatus | null;
+    loading: boolean;
+}
+
+function Dashboard({ hostStatus, loading }: DashboardProps) {
     const features = [
         {
             title: "Devices",
@@ -147,7 +161,7 @@ function Dashboard() {
                 {features.map(feature => (
                     <div className="col-md-6" key={feature.title}>
                         <div className="content-card feature-card">
-                            <i className={`bi ${feature.icon} feature-icon`} />
+                            <i className={`bi ${feature.icon} feature-icon`}/>
 
                             <h5>{feature.title}</h5>
 
@@ -160,20 +174,41 @@ function Dashboard() {
             </div>
 
             <div className="content-card mt-4">
-                <h6>Application Information</h6>
+                <div className="d-flex align-items-center justify-content-between mb-3">
+                    <h6 className="mb-0">
+                        Backend Connection
+                    </h6>
 
-                <div className="small text-secondary">
-                    <div>
-                        Platform: {window.remoteLink.platform}
+                    <span className={"badge " + (hostStatus?.connected ? "text-bg-success" : "text-bg-danger")}>
+                        {loading ? "Checking" : hostStatus?.connected ? "Online" : "Offline"}
+                    </span>
+                </div>
+
+                <div className="small">
+                    <div className="mb-2">
+                        <span className="text-secondary">
+                            Host:
+                        </span>{" "} {hostStatus?.machineName ?? "Unavailable"}
                     </div>
 
-                    <div>
-                        Electron: {window.remoteLink.electronVersion}
+                    <div className="mb-2">
+                        <span className="text-secondary">
+                            Backend Version:
+                        </span>{" "} {hostStatus?.version ?? "Unavailable"}
                     </div>
 
-                    <div>
-                        Application: {window.remoteLink.appName}
+                    <div className="mb-2">
+                        <span className="text-secondary">
+                            Endpoint:
+                        </span>{" "} 127.0.0.1:5017
                     </div>
+
+                    {hostStatus?.error && (
+                        <div className="text-danger mt-3">
+                            <i className="bi bi-exclamation-triangle me-2"/>
+                            {hostStatus.error}
+                        </div>
+                    )}
                 </div>
             </div>
         </>

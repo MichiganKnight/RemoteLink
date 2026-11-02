@@ -7,9 +7,9 @@ namespace RemoteLink.Host.Controllers
     public sealed class SystemController : ControllerBase
     {
         [HttpGet("status")]
-        public IActionResult GetStatus()
+        public ActionResult<SystemStatusResponse> GetStatus()
         {
-            return Ok(new
+            return Ok(new SystemStatusResponse
             {
                 Application = "RemoteLink",
                 Status = "Online",
@@ -18,5 +18,18 @@ namespace RemoteLink.Host.Controllers
                 TimestampUtc = DateTime.UtcNow
             });
         }
+    }
+
+    public sealed class SystemStatusResponse
+    {
+        public string Application { get; set; } = string.Empty;
+
+        public string Status { get; set; } = string.Empty;
+
+        public string MachineName { get; set; } = string.Empty;
+
+        public string Version { get; set; } = string.Empty;
+
+        public DateTime TimestampUtc { get; set; }
     }
 }
