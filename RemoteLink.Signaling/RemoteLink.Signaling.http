@@ -1,0 +1,6 @@
+@RemoteLink.Signaling_HostAddress = http://localhost:5285
+
+GET {{RemoteLink.Signaling_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
