@@ -14,7 +14,7 @@ files:
   - "!**/*.tsx"
 
 extraResources:
-  - from: ../../artifacts/host/win-x64
+  - from: ../Artifacts/Host
     to: host
     filter:
       - "**/*"
