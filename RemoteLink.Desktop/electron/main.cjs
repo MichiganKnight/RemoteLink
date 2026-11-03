@@ -133,8 +133,33 @@ function initializeApplication() {
     });
 }
 
-app.on("before-quit", () => {
-    stopHost();
+let shutdownStarted = false;
+let shutdownCompleted = false;
+
+app.on("before-quit", event => {
+    if (shutdownCompleted) {
+        return;
+    }
+
+    event.preventDefault();
+
+    if (shutdownStarted) {
+        return;
+    }
+
+    shutdownStarted = true;
+
+    void (async () => {
+        try {
+            await stopHost();
+        } catch (error) {
+            console.error("[RemoteLink] Shutdown error:", error);
+        } finally {
+            shutdownCompleted = true;
+
+            app.quit();
+        }
+    })();
 });
 
 app.on("window-all-closed", () => {

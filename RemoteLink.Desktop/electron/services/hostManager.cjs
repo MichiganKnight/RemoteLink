@@ -1,4 +1,5 @@
-const { spawn, spawnSync } = require("node:child_process");
+const { spawn } = require("node:child_process");
+const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 
@@ -6,7 +7,7 @@ const HOST_PORT = 5017;
 const HOST_URL = `http://127.0.0.1:${HOST_PORT}`;
 
 let hostProcess = null;
-let ownsHostProcess = false;
+let shutdownToken = null;
 
 function getHostExecutablePAth(app) {
     if (app.isPackaged) {
@@ -47,20 +48,18 @@ async function startHost(app) {
     if (await isHostRunning()) {
         console.log("[HostManager] Existing Host detected.");
 
-        ownsHostProcess = false;
-
         return;
     }
 
     const executablePath = getHostExecutablePAth(app);
 
     if (!fs.existsSync(executablePath)) {
-        console.error("[HostManager] Host executable not found: ", executablePath);
+        console.error("[HostManager] Executable missing:", executablePath);
 
         return;
     }
 
-    console.log("[HostManager] Starting Host: ", executablePath);
+    const token = crypto.randomBytes(32).toString("hex");
 
     const child = spawn(executablePath, [], {
         cwd: path.dirname(executablePath),
@@ -69,12 +68,13 @@ async function startHost(app) {
         env: {
             ...process.env,
             ASPNETCORE_URLS: HOST_URL,
-            ASPNETCORE_ENVIRONMENT: app.isPackaged ? "Production" : "Development"
+            ASPNETCORE_ENVIRONMENT: app.isPackaged ? "Production" : "Development",
+            REMOTELINK_SHUTDOWN_TOKEN: token
         }
     });
 
     hostProcess = child;
-    ownsHostProcess = true;
+    shutdownToken = token;
 
     child.stdout?.on("data", data => {
         console.log(`[RemoteLink.Host] ${data.toString().trimEnd()}`);
@@ -85,43 +85,101 @@ async function startHost(app) {
     });
 
     child.on("error", error => {
-        console.error("[HostManager] Failed to start Host:", error);
+        console.error("[HostManager] Startup error:", error);
     });
 
     child.on("exit", (code, signal) => {
-        console.log(`[HostManager] Host exited. Code=${code}, Signal=${signal}`);
+        console.log(`[HostManager] Exited: ${code}, ${signal}`);
 
         if (hostProcess === child) {
             hostProcess = null;
-            ownsHostProcess = false;
+            shutdownToken = null;
         }
+    });
+
+    console.log(`[HostManager] Started Host PID ${child.pid}`);
+}
+
+function waitForExit(child, timeoutMs) {
+    if (child.exitCode !== null || child.signalCode !== null) {
+        return Promise.resolve(true);
+    }
+
+    return new Promise(resolve => {
+        let finished = false;
+
+        const timeout = setTimeout(() => {
+            finish(false);
+        }, timeoutMs);
+
+        function finish(exited) {
+            if (finished) {
+                return;
+            }
+
+            finished = true;
+            clearTimeout(timeout);
+            child.removeListener("exit", onExit);
+            resolve(exited);
+        }
+
+        function onExit() {
+            finish(true);
+        }
+
+        child.once("exit", onExit);
     });
 }
 
-function stopHost() {
-    if (!hostProcess || !ownsHostProcess) {
+async function stopHost() {
+    const child = hostProcess;
+    const token = shutdownToken;
+
+    if (!child || !token) {
         return;
     }
 
-    const pid = hostProcess.pid;
-
-    if (!pid || hostProcess.exitCode !== null) {
+    if (child.exitCode !== null || child.signalCode !== null) {
         return;
     }
 
-    console.log(`[HostManager] Stopping owned Host PID ${pid}`);
+    console.log("[HostManager] Requesting graceful shutdown.");
 
-    if (process.platform === "win32") {
-        const result = spawnSync("taskkill", ["/PID", String(pid), "/T", "/F"], {
-            windowsHide: true,
-            timeout: 5000
+    const controller = new AbortController();
+
+    const timeout = setTimeout(() => controller.abort(), 3000);
+
+    try {
+        const response = await fetch(`${HOST_URL}/api/lifecycle/shutdown`, {
+            method: "POST",
+            headers: {
+                "X-RemoteLink-Shutdown-Token": token
+            },
+            signal: controller.signal
         });
 
-        if (result.error) {
-            console.error("[HostManager] Stop failed:", result.error);
+        if (!response.ok) {
+            console.warn(`[HostManager] Shutdown returned ${response.status}`);
         }
-    } else {
-        hostProcess.kill();
+    } catch (error) {
+        console.warn("[HostManager] Graceful shutdown request failed:", error.message);
+    } finally {
+        clearTimeout(timeout);
+    }
+
+    const exited = await waitForExit(child, 5000);
+
+    if (!exited && child.pid) {
+        console.warn("[HostManager] Host did not exit. Terminating owned process.");
+
+        const killer = spawn("taskkill", ["/PID", String(child.pid), "/T", "/F"], {
+            windowsHide: true,
+            stdio: "ignore"
+        });
+
+        killer.on("error", error => {
+            console.error("[HostManager] Forced shutdown failed:", error);
+        });
     }
 }
 

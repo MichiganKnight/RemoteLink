@@ -1,0 +1,37 @@
+appId: com.remotelink.desktop
+productName: RemoteLink
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - dist/**/*
+  - electron/**/*
+  - package.json
+  - "!**/*.map"
+  - "!**/*.ts"
+  - "!**/*.tsx"
+
+extraResources:
+  - from: ../../artifacts/host/win-x64
+    to: host
+    filter:
+      - "**/*"
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: RemoteLink
+  artifactName: "RemoteLink-Setup-${version}-${arch}.${ext}"
+
+asar: true
+npmRebuild: false
