@@ -1,5 +1,4 @@
 using System.Net;
-using System.Security.Cryptography.X509Certificates;
 using RemoteLink.Host.Services;
 
 namespace RemoteLink.Host
@@ -16,6 +15,9 @@ namespace RemoteLink.Host
             builder.Services.AddSingleton<DeviceSecurityService>();
             builder.Services.AddSingleton<TlsCertificateService>();
             builder.Services.AddSingleton<LanDiscoveryService>();
+            builder.Services.AddSingleton<PairingSessionService>();
+            builder.Services.AddSingleton<PairingSecurityService>();
+            builder.Services.AddSingleton<PairingClientService>();
 
             builder.Services.AddHostedService(provider => provider.GetRequiredService<LanDiscoveryService>());
             
@@ -35,11 +37,18 @@ namespace RemoteLink.Host
 
             app.Use(async (context, next) =>
             {
-                if (context.Connection.LocalPort == 5019 && !context.Request.Path.Equals("/api/lan/identity", StringComparison.OrdinalIgnoreCase))
+                if (context.Connection.LocalPort == 5019)
                 {
-                    context.Response.StatusCode = 404;
+                    bool allowed = context.Request.Method == HttpMethods.Get && context.Request.Path.Equals("/api/lan/identity", StringComparison.OrdinalIgnoreCase);
+                    
+                    allowed |= context.Request.Method == HttpMethods.Post && context.Request.Path.Equals("/api/lan/pairing/propose", StringComparison.OrdinalIgnoreCase);
 
-                    return;
+                    if (!allowed)
+                    {
+                        context.Response.StatusCode = 404;
+
+                        return;    
+                    }
                 }
 
                 await next();

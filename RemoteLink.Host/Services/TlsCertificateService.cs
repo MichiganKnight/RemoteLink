@@ -38,6 +38,8 @@ namespace RemoteLink.Host.Services
         }
         
         public X509Certificate2 GetCertificate() => _certificate;
+        
+        public string GetThumbprint() => _certificate.Thumbprint;
 
         private static X509Certificate2 CreateCertificate(string certificatePath)
         {

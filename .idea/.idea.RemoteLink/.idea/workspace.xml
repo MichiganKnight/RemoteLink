@@ -19,8 +19,8 @@
   <component name="ChangeListManager">
     <list default="true" id="3f37435d-db63-4300-bdfc-ac9e4eb902dc" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/RemoteLink.Host/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Host/Program.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RemoteLink.Host/Services/DeviceSecurityService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Host/Services/DeviceSecurityService.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RemoteLink.Host/appsettings.Development.json" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Host/appsettings.Development.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/RemoteLink.Host/Services/TlsCertificateService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Host/Services/TlsCertificateService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Tests/RemoteLink.Host.Tests/UnitTest1.cs" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -42,17 +42,31 @@
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/DeviceSecurityIdentity.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/DiscoveredDevice.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/DiscoveryAnnouncement.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/PairingConfirmation.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/PairingProposal.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/PairingProposalResponse.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/PairingRequest.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/PairingStatus.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/SignedPairingMessage.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/StartPairingRequest.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/TrustedDevice.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Controllers/DevicesController.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Controllers/IdentityController.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Controllers/LanController.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Controllers/LanPairingController.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Controllers/LifecycleController.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Controllers/LocalPairingController.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Controllers/LocalSecurityController.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Controllers/SystemController.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/DeviceIdentityService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/DeviceSecurityService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/LanDiscoveryService.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/PairingClientService.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/PairingSecurityService.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/PairingSessionService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/TlsCertificateService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Tests/RemoteLink.Core.Tests/UnitTest1.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/Tests/RemoteLink.Host.Tests/UnitTest1.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Tests/RemoteLink.Host.Tests/PairingSecurityTests.cs" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="McpProjectServerCommands">
     <commands />
@@ -60,61 +74,61 @@
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.8510358529907215E-51" />
-      <entry key="MS500" value="7.136462140206452E-11" />
-      <entry key="S2" value="0.0029065179972578604" />
-      <entry key="S5" value="0.09810818989282548" />
-      <entry key="S10" value="0.441339202301035" />
-      <entry key="S30" value="8.217541127352867" />
-      <entry key="S60" value="28.519971834389192" />
-      <entry key="M2" value="64.18700278757584" />
-      <entry key="M5" value="127.9104537122531" />
-      <entry key="M10" value="173.24175821347714" />
-      <entry key="M15" value="194.57078336224544" />
-      <entry key="M30" value="238.8603220900255" />
-      <entry key="H1" value="373.21600843314144" />
-      <entry key="H2" value="653.3221082772797" />
-      <entry key="H4" value="983.5826569236727" />
-      <entry key="D1" value="1484.877010294251" />
-      <entry key="W1" value="1603.945219792497" />
+      <entry key="MS100" value="1.0000000213675984" />
+      <entry key="MS500" value="1.0295618097716455" />
+      <entry key="S2" value="1.572503299767702" />
+      <entry key="S5" value="2.6829098273504663" />
+      <entry key="S10" value="4.900680496238168" />
+      <entry key="S30" value="13.987325912229645" />
+      <entry key="S60" value="24.428715357268718" />
+      <entry key="M2" value="49.07850324683903" />
+      <entry key="M5" value="125.21388278991746" />
+      <entry key="M10" value="206.71453758028147" />
+      <entry key="M15" value="269.7065738694466" />
+      <entry key="M30" value="477.91886389878977" />
+      <entry key="H1" value="919.6450562901063" />
+      <entry key="H2" value="1573.274649698609" />
+      <entry key="H4" value="2287.4516168285354" />
+      <entry key="D1" value="3420.7677617572695" />
+      <entry key="W1" value="3704.2510470224775" />
     </decayedCancelled>
     <decayedSelected>
-      <entry key="MS100" value="1.0093554855896345" />
-      <entry key="MS500" value="1.4386606695939632" />
-      <entry key="S2" value="2.4941635778102618" />
-      <entry key="S5" value="3.809414844313822" />
-      <entry key="S10" value="5.1685543273495655" />
-      <entry key="S30" value="8.772584367913787" />
-      <entry key="S60" value="14.443092301134051" />
-      <entry key="M2" value="26.269239070615022" />
-      <entry key="M5" value="49.74986626421266" />
-      <entry key="M10" value="66.55595683398985" />
-      <entry key="M15" value="74.41814141882459" />
-      <entry key="M30" value="89.82599432514745" />
-      <entry key="H1" value="129.116881995341" />
-      <entry key="H2" value="201.170222809782" />
-      <entry key="H4" value="278.9351060130746" />
-      <entry key="D1" value="388.62508248900855" />
-      <entry key="W1" value="413.6162598681787" />
+      <entry key="MS100" value="1.0030378489476553E-23" />
+      <entry key="MS500" value="2.8044798918319807E-5" />
+      <entry key="S2" value="0.12033581961430133" />
+      <entry key="S5" value="0.8430658894168436" />
+      <entry key="S10" value="2.052964004457342" />
+      <entry key="S30" value="5.803122051068133" />
+      <entry key="S60" value="9.694465777871503" />
+      <entry key="M2" value="18.477947050884385" />
+      <entry key="M5" value="45.5388082268384" />
+      <entry key="M10" value="73.46527232454687" />
+      <entry key="M15" value="92.94215135588381" />
+      <entry key="M30" value="142.70440625799293" />
+      <entry key="H1" value="232.6630304557699" />
+      <entry key="H2" value="367.8964364532863" />
+      <entry key="H4" value="519.8265788109514" />
+      <entry key="D1" value="760.7371462266696" />
+      <entry key="W1" value="820.3595580363088" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="0.06564920746032549" />
-      <entry key="MS500" value="0.803434089432975" />
-      <entry key="S2" value="2.002526570749759" />
-      <entry key="S5" value="3.4437695267648962" />
-      <entry key="S10" value="5.217959268480113" />
-      <entry key="S30" value="16.693553105568565" />
-      <entry key="S60" value="42.66064969970842" />
-      <entry key="M2" value="90.14492133045259" />
-      <entry key="M5" value="177.41252404662853" />
-      <entry key="M10" value="239.63038353842012" />
-      <entry key="M15" value="268.86383622661134" />
-      <entry key="M30" value="328.60971823689687" />
-      <entry key="H1" value="502.2753160211646" />
-      <entry key="H2" value="854.4453819956794" />
-      <entry key="H4" value="1262.4842737690637" />
-      <entry key="D1" value="1873.4941033555103" />
-      <entry key="W1" value="2017.560258801045" />
+      <entry key="MS100" value="0.9659363289248456" />
+      <entry key="MS500" value="0.9935613244669941" />
+      <entry key="S2" value="1.3514307582986753" />
+      <entry key="S5" value="3.1038384506271077" />
+      <entry key="S10" value="6.54632467819474" />
+      <entry key="S30" value="19.4476923113346" />
+      <entry key="S60" value="33.84476934425394" />
+      <entry key="M2" value="67.3089623360333" />
+      <entry key="M5" value="170.53439192922443" />
+      <entry key="M10" value="280.01015158473444" />
+      <entry key="M15" value="362.50629891965536" />
+      <entry key="M30" value="620.5090658355266" />
+      <entry key="H1" value="1152.2073543555223" />
+      <entry key="H2" value="1941.0868398896" />
+      <entry key="H4" value="2807.216791685097" />
+      <entry key="D1" value="4181.489504078617" />
+      <entry key="W1" value="4524.608219835235" />
     </decayedShown>
   </component>
   <component name="ProblemsViewState">
