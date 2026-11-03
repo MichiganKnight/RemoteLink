@@ -18,12 +18,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3f37435d-db63-4300-bdfc-ac9e4eb902dc" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/RemoteLink.Desktop/electron/main.cjs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Desktop/electron/main.cjs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RemoteLink.Desktop/electron/preload.cjs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Desktop/electron/preload.cjs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RemoteLink.Desktop/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Desktop/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RemoteLink.Desktop/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Desktop/src/App.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RemoteLink.Desktop/src/types/electron.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Desktop/src/types/electron.d.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RemoteLink.Host/Controllers/SystemController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Host/Controllers/SystemController.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/RemoteLink.Host/RemoteLink.Host.http" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/RemoteLink.Host/WeatherForecast.cs" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -52,61 +50,61 @@
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.4818021725023483E-9" />
-      <entry key="MS500" value="0.017145811524675668" />
-      <entry key="S2" value="0.3618854910825232" />
-      <entry key="S5" value="0.7522197348806409" />
-      <entry key="S10" value="2.3683059205909904" />
-      <entry key="S30" value="13.269671261798086" />
-      <entry key="S60" value="27.752607849337366" />
-      <entry key="M2" value="52.88346642940219" />
-      <entry key="M5" value="93.34467496619402" />
-      <entry key="M10" value="117.16112641862736" />
-      <entry key="M15" value="126.93872966226573" />
-      <entry key="M30" value="137.83643907172086" />
-      <entry key="H1" value="143.75011738230094" />
-      <entry key="H2" value="146.83172757630865" />
-      <entry key="H4" value="148.40486309692386" />
-      <entry key="D1" value="149.73260149880565" />
-      <entry key="W1" value="149.96176225194927" />
+      <entry key="MS100" value="1.0000000000000584" />
+      <entry key="MS500" value="1.0022560269229561" />
+      <entry key="S2" value="1.217942601652618" />
+      <entry key="S5" value="1.5629803263265343" />
+      <entry key="S10" value="2.1313429273029847" />
+      <entry key="S30" value="6.9098709815795285" />
+      <entry key="S60" value="15.097593081311784" />
+      <entry key="M2" value="24.762948788565897" />
+      <entry key="M5" value="36.14209808409269" />
+      <entry key="M10" value="54.9314694067471" />
+      <entry key="M15" value="74.30438609752025" />
+      <entry key="M30" value="113.20913274448525" />
+      <entry key="H1" value="145.95156549903845" />
+      <entry key="H2" value="167.34162803103396" />
+      <entry key="H4" value="179.5866636903196" />
+      <entry key="D1" value="190.6786210421161" />
+      <entry key="W1" value="192.66620862084488" />
     </decayedCancelled>
     <decayedSelected>
-      <entry key="MS100" value="1.0" />
-      <entry key="MS500" value="1.0" />
-      <entry key="S2" value="1.0" />
-      <entry key="S5" value="1.0000001145906996" />
-      <entry key="S10" value="1.000827263517231" />
-      <entry key="S30" value="1.3825745726193983" />
-      <entry key="S60" value="3.050329873371547" />
-      <entry key="M2" value="6.213985063465813" />
-      <entry key="M5" value="10.64300383106363" />
-      <entry key="M10" value="12.983360426077681" />
-      <entry key="M15" value="13.903817540751481" />
-      <entry key="M30" value="14.906523527706877" />
-      <entry key="H1" value="15.44134510099882" />
-      <entry key="H2" value="15.717618561255302" />
-      <entry key="H4" value="15.858036199522587" />
-      <entry key="D1" value="15.976231169782128" />
-      <entry key="W1" value="15.996601792283004" />
+      <entry key="MS100" value="0.0" />
+      <entry key="MS500" value="0.0" />
+      <entry key="S2" value="1.6755842126093907E-255" />
+      <entry key="S5" value="1.2293245470857005E-102" />
+      <entry key="S10" value="1.109666255225992E-51" />
+      <entry key="S30" value="1.430978084886605E-17" />
+      <entry key="S60" value="9.81338904917889E-9" />
+      <entry key="M2" value="3.524571371608532E-4" />
+      <entry key="M5" value="0.21308783661225184" />
+      <entry key="M10" value="1.8371065026628024" />
+      <entry key="M15" value="3.775422332881737" />
+      <entry key="M30" value="7.7676940270363986" />
+      <entry key="H1" value="11.146614956928593" />
+      <entry key="H2" value="13.354132471762973" />
+      <entry key="H4" value="14.617189336846128" />
+      <entry key="D1" value="15.760745173562846" />
+      <entry key="W1" value="15.965599152162016" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="1.0177793990138355E-8" />
-      <entry key="MS500" value="0.026199123433571746" />
-      <entry key="S2" value="0.5759323823068699" />
-      <entry key="S5" value="1.2761436527877064" />
-      <entry key="S10" value="3.0673123051174334" />
-      <entry key="S30" value="14.458922615351117" />
-      <entry key="S60" value="30.62266180437821" />
-      <entry key="M2" value="58.93481867045249" />
-      <entry key="M5" value="103.87930651961591" />
-      <entry key="M10" value="130.07806845292322" />
-      <entry key="M15" value="140.7949659527003" />
-      <entry key="M30" value="152.7173439886961" />
-      <entry key="H1" value="159.17815959022678" />
-      <entry key="H2" value="162.5425663915185" />
-      <entry key="H4" value="164.2594767138938" />
-      <entry key="D1" value="165.70825764025741" />
-      <entry key="W1" value="165.95828178400293" />
+      <entry key="MS100" value="0.9862327044934168" />
+      <entry key="MS500" value="0.999481031903533" />
+      <entry key="S2" value="1.2170985800027867" />
+      <entry key="S5" value="1.5622923999080949" />
+      <entry key="S10" value="2.1286929669836163" />
+      <entry key="S30" value="6.904039122906114" />
+      <entry key="S60" value="15.092730081030451" />
+      <entry key="M2" value="24.76010757159581" />
+      <entry key="M5" value="36.351508241640495" />
+      <entry key="M10" value="56.75837919548368" />
+      <entry key="M15" value="78.06634538482233" />
+      <entry key="M30" value="120.963200284967" />
+      <entry key="H1" value="157.08843776537267" />
+      <entry key="H2" value="180.6899300180802" />
+      <entry key="H4" value="194.20066305540587" />
+      <entry key="D1" value="206.43879306516422" />
+      <entry key="W1" value="208.63172483217895" />
     </decayedShown>
   </component>
   <component name="ProblemsViewState">
@@ -124,30 +122,39 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;.NET Launch Settings Profile.RemoteLink.Host.executor&quot;: &quot;Run&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
-    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
-    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    ".NET Launch Settings Profile.RemoteLink.Host.executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Publish to folder.Publish Host.executor": "Run",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.readMode.enableVisualFormatting": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "cidr.known.project.marker": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "master",
+    "junie.onboarding.icon.badge.shown": "true",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "to.speed.mode.migration.done": "true"
   }
-}</component>
-  <component name="RunManager" selected=".NET Launch Settings Profile.RemoteLink.Host">
+}]]></component>
+  <component name="RunManager" selected="Publish to folder.Publish Host">
+    <configuration name="Publish Host" type="DotNetFolderPublish" factoryName="Publish to folder">
+      <riderPublish configuration="Release" platform="Any CPU" produce_single_file="true" self_contained="true" target_folder="$PROJECT_DIR$/Artifacts/Host" target_framework="net10.0" uuid_high="-7830479812831787127" uuid_low="-6643067045281006256">
+        <runtimes>
+          <item value="win-x64" />
+        </runtimes>
+      </riderPublish>
+      <method v="2" />
+    </configuration>
     <configuration name="RemoteLink.Host" type="LaunchSettings" factoryName=".NET Launch Settings Profile">
       <option name="LAUNCH_PROFILE_PROJECT_FILE_PATH" value="$PROJECT_DIR$/RemoteLink.Host/RemoteLink.Host.csproj" />
       <option name="LAUNCH_PROFILE_TFM" value="net10.0" />
@@ -228,6 +235,14 @@
         <option name="Build" />
       </method>
     </configuration>
+    <list>
+      <item itemvalue=".NET Launch Settings Profile.RemoteLink.Host" />
+      <item itemvalue=".NET Launch Settings Profile.RemoteLink.Host: http" />
+      <item itemvalue=".NET Launch Settings Profile.RemoteLink.Host: https" />
+      <item itemvalue=".NET Launch Settings Profile.RemoteLink.Signaling: http" />
+      <item itemvalue=".NET Launch Settings Profile.RemoteLink.Signaling: https" />
+      <item itemvalue="Publish to folder.Publish Host" />
+    </list>
   </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">

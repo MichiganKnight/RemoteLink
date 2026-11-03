@@ -1,9 +1,29 @@
 const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("node:path");
 
+const { HOST_URL, startHost, stopHost } = require("./services/hostManager.cjs");
+
 const isDevelopment = process.env.ELECTRON_DEV === "1";
 
-const HOST_URL = "http://127.0.0.1:5017";
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+
+if (!gotSingleInstanceLock) {
+    app.quit();
+} else {
+    app.on("second-instance", () => {
+        const window = BrowserWindow.getAllWindows()[0];
+
+        if (window) {
+            if (window.isMinimized()) {
+                window.restore();
+            }
+
+            window.focus();
+        }
+    });
+
+    initializeApplication();
+}
 
 async function getHostStatus() {
     const controller = new AbortController();
@@ -97,19 +117,26 @@ function createWindow() {
     }
 }
 
-app.whenReady().then(() => {
-    registerIpcHandlers();
-    createWindow();
+function initializeApplication() {
+    app.whenReady().then(async () => {
+        registerIpcHandlers();
 
-    app.on("activate", () => {
-        if (BrowserWindow.getAllWindows().length === 0) {
-            createWindow();
-        }
+        createWindow();
+
+        await startHost(app);
+
+        app.on("activate", () => {
+            if (BrowserWindow.getAllWindows().length === 0) {
+                createWindow();
+            }
+        });
     });
+}
+
+app.on("before-quit", () => {
+    stopHost();
 });
 
 app.on("window-all-closed", () => {
-    if (process.platform !== "darwin") {
-        app.quit();
-    }
+    app.quit();
 });
