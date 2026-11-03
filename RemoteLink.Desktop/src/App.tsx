@@ -4,6 +4,8 @@ import { useHostStatus } from "./hooks/useHostStatus";
 
 import type { HostStatus } from "./types/electron";
 
+import DevicesPage from "./pages/DevicesPage";
+
 type Page = "Dashboard" | "Devices" | "Transfers" | "Chat" | "Remote" | "Settings";
 
 interface NavigationItem {
@@ -102,6 +104,8 @@ function App() {
                 <div className="app-content">
                     {activePage === "Dashboard" ? (
                         <Dashboard hostStatus={hostStatus} loading={loading}/>
+                    ) : activePage === "Devices" ? (
+                        <DevicesPage />
                     ) : (
                         <div className="content-card">
                             <h5>{currentPage?.label}</h5>

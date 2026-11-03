@@ -77,6 +77,29 @@ async function getHostStatus() {
 
 function registerIpcHandlers() {
     ipcMain.handle("host:get-status", async () => await getHostStatus());
+
+    ipcMain.handle("devices:get-all", async () => {
+        const controller = new AbortController();
+
+        const timeout = setTimeout(() => controller.abort(), 3000);
+
+        try {
+            const response = await fetch(`${HOST_URL}/api/devices`, {
+                signal: controller.signal,
+                headers: {
+                    Accept: "application/json"
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Devices API returned HTTP ${response.status}`);
+            }
+
+            return await response.json();
+        } finally {
+            clearTimeout(timeout);
+        }
+    });
 }
 
 function createWindow() {

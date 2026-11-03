@@ -5,5 +5,6 @@ contextBridge.exposeInMainWorld("remoteLink", {
     electronVersion: process.versions.electron,
     appName: "RemoteLink",
 
-    getHostStatus: () => ipcRenderer.invoke("host:get-status")
+    getHostStatus: () => ipcRenderer.invoke("host:get-status"),
+    getDevices: () => ipcRenderer.invoke("devices:get-all")
 });
