@@ -1,5 +1,7 @@
 {
     "name": "remotelink-desktop",
+    "author": "MichiganKnight",
+    "description": "Desktop application for RemoteLink - A web-based remote control for your PC.",
     "private": true,
     "version": "0.1.0",
     "type": "module",
