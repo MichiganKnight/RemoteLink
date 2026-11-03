@@ -138,7 +138,7 @@ function createWindow() {
     });
 
     if (isDevelopment) {
-        mainWindow.loadURL("http://127.0.0.1/5017");
+        mainWindow.loadURL("http://127.0.0.1/5173");
 
         mainWindow.webContents.openDevTools({
             mode: "detach"

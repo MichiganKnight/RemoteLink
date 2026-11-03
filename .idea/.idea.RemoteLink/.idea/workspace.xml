@@ -17,14 +17,7 @@
     <configurations />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3f37435d-db63-4300-bdfc-ac9e4eb902dc" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/RemoteLink.Desktop/electron/main.cjs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Desktop/electron/main.cjs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RemoteLink.Desktop/electron/preload.cjs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Desktop/electron/preload.cjs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RemoteLink.Desktop/src/pages/DevicesPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Desktop/src/pages/DevicesPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RemoteLink.Desktop/src/types/electron.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Desktop/src/types/electron.d.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RemoteLink.Host/Controllers/DevicesController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Host/Controllers/DevicesController.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RemoteLink.Host/Controllers/LocalPairingController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Host/Controllers/LocalPairingController.cs" afterDir="false" />
-    </list>
+    <list default="true" id="3f37435d-db63-4300-bdfc-ac9e4eb902dc" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -34,7 +27,7 @@
     <option name="firstShow" value="false" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="1" />
+    <option name="cachedIndexableFilesCount" value="9" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="Git.Settings">

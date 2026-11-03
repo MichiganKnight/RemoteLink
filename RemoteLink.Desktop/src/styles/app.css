@@ -149,3 +149,77 @@ button {
 h4, h5, h6 {
     color: #f3f4f6;
 }
+
+/* =========================================
+   Incoming Pairing Requests
+   ========================================= */
+
+.pairing-empty-state {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    min-height: 110px;
+}
+
+.pairing-empty-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 52px;
+    height: 52px;
+    border-radius: 10px;
+    background: #263c59;
+    color: #60a5fa;
+    font-size: 24px;
+}
+
+.pairing-request-card {
+    transition: border-color 0.15s ease;
+}
+
+.pairing-request-card:hover {
+    border-color: #4b6585;
+}
+
+.pairing-device-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    background: #263c59;
+    color: #60a5fa;
+    font-size: 23px;
+}
+
+.pairing-request-details {
+    min-width: 0;
+}
+
+.pairing-fingerprint {
+    padding: 12px 14px;
+    border: 1px solid #344154;
+    border-radius: 8px;
+    background: #17202e;
+}
+
+.pairing-fingerprint code {
+    display: block;
+    color: #93c5fd;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+    .pairing-empty-state {
+        align-items: flex-start;
+        gap: 14px;
+    }
+
+    .pairing-request-card {
+        padding: 18px;
+    }
+}

@@ -104,7 +104,7 @@ export default function DevicesPage() {
                         <div key={device.id} className="col-md-6">
                             <div className="content-card">
                                 <div className="d-flex align-items-center gap-3">
-                                    <i className="bi bi-pd-display fs-2 text-primary" />
+                                    <i className="bi bi-pc-display fs-2 text-primary" />
 
                                     <div className="flex-grow-1">
                                         <h6 className="mb-1">
