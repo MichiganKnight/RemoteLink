@@ -11,6 +11,7 @@ namespace RemoteLink.Host
             builder.Services.AddControllers();
             
             builder.Services.AddSingleton<DeviceIdentityService>();
+            builder.Services.AddSingleton<DeviceSecurityService>();
             builder.Services.AddSingleton<LanDiscoveryService>();
 
             builder.Services.AddHostedService(provider => provider.GetRequiredService<LanDiscoveryService>());

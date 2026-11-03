@@ -18,8 +18,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3f37435d-db63-4300-bdfc-ac9e4eb902dc" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/RemoteLink.Desktop/electron/main.cjs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Desktop/electron/main.cjs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RemoteLink.Desktop/electron/services/hostManager.cjs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Desktop/electron/services/hostManager.cjs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/RemoteLink.Host/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Host/Program.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/RemoteLink.Host/RemoteLink.Host.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Host/RemoteLink.Host.csproj" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -38,8 +38,16 @@
   </component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/DeviceInfo.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/DeviceSecurityIdentity.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/DiscoveredDevice.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/DiscoveryAnnouncement.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Controllers/DevicesController.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Controllers/IdentityController.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Controllers/LifecycleController.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Controllers/SystemController.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/DeviceIdentityService.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/DeviceSecurityService.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/LanDiscoveryService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Tests/RemoteLink.Core.Tests/UnitTest1.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Tests/RemoteLink.Host.Tests/UnitTest1.cs" root0="FORCE_HIGHLIGHTING" />
   </component>
@@ -49,65 +57,65 @@
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.0017602548097868" />
-      <entry key="MS500" value="1.2812647467411744" />
-      <entry key="S2" value="1.7647643201427006" />
-      <entry key="S5" value="2.5884096284601927" />
-      <entry key="S10" value="4.428173883267316" />
-      <entry key="S30" value="10.540692106706885" />
-      <entry key="S60" value="14.791958360968135" />
-      <entry key="M2" value="17.943230574345794" />
-      <entry key="M5" value="24.7274097491709" />
-      <entry key="M10" value="44.26582067159206" />
-      <entry key="M15" value="61.62441998094512" />
-      <entry key="M30" value="96.49489560140132" />
-      <entry key="H1" value="145.17958879729534" />
-      <entry key="H2" value="205.0588885936295" />
-      <entry key="H4" value="257.02345414052564" />
-      <entry key="D1" value="319.65631080050736" />
-      <entry key="W1" value="332.7417889822893" />
+      <entry key="MS100" value="1.0" />
+      <entry key="MS500" value="1.0000000009261976" />
+      <entry key="S2" value="1.0144925516048298" />
+      <entry key="S5" value="1.4856293013800344" />
+      <entry key="S10" value="2.7902891897052324" />
+      <entry key="S30" value="6.023214357139952" />
+      <entry key="S60" value="9.611983257192854" />
+      <entry key="M2" value="22.875095460177942" />
+      <entry key="M5" value="68.44327262510177" />
+      <entry key="M10" value="130.90830792858307" />
+      <entry key="M15" value="183.25647429339764" />
+      <entry key="M30" value="328.5803545979642" />
+      <entry key="H1" value="544.4898113555504" />
+      <entry key="H2" value="772.7954638020072" />
+      <entry key="H4" value="956.8566133656972" />
+      <entry key="D1" value="1174.5705936508102" />
+      <entry key="W1" value="1220.1270224491093" />
     </decayedCancelled>
     <decayedSelected>
-      <entry key="MS100" value="8.130069051823428E-38" />
-      <entry key="MS500" value="3.819608462334252E-8" />
-      <entry key="S2" value="0.013980412370142886" />
-      <entry key="S5" value="0.18457070574424034" />
-      <entry key="S10" value="0.49940855166072823" />
-      <entry key="S30" value="1.3987879252840154" />
-      <entry key="S60" value="2.0001065334691983" />
-      <entry key="M2" value="2.4455719181019493" />
-      <entry key="M5" value="3.961827639408109" />
-      <entry key="M10" value="8.775838689901224" />
-      <entry key="M15" value="12.95228779518773" />
-      <entry key="M30" value="20.382917047339838" />
-      <entry key="H1" value="27.66733230907892" />
-      <entry key="H2" value="34.64826558791944" />
-      <entry key="H4" value="40.14404326563832" />
-      <entry key="D1" value="46.477525167467974" />
-      <entry key="W1" value="47.776483030792" />
+      <entry key="MS100" value="2.796762213962023E-59" />
+      <entry key="MS500" value="1.9468443133501634E-12" />
+      <entry key="S2" value="0.0012093278540047363" />
+      <entry key="S5" value="0.0867551988710101" />
+      <entry key="S10" value="0.44845181926159117" />
+      <entry key="S30" value="1.5622065315602254" />
+      <entry key="S60" value="2.7777179306128845" />
+      <entry key="M2" value="6.811448733597979" />
+      <entry key="M5" value="20.399785092255375" />
+      <entry key="M10" value="37.53923421971304" />
+      <entry key="M15" value="50.88648807866179" />
+      <entry key="M30" value="85.3432587249015" />
+      <entry key="H1" value="132.8240456626136" />
+      <entry key="H2" value="178.72237696826494" />
+      <entry key="H4" value="212.74889231189852" />
+      <entry key="D1" value="250.19679717849135" />
+      <entry key="W1" value="257.7114088921385" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="0.0019139738685219644" />
-      <entry key="MS500" value="0.34961936932872983" />
-      <entry key="S2" value="1.2720612384154582" />
-      <entry key="S5" value="2.4326979737172727" />
-      <entry key="S10" value="4.588687188377997" />
-      <entry key="S30" value="11.614708583971355" />
-      <entry key="S60" value="16.557245376189385" />
-      <entry key="M2" value="20.245356921955793" />
-      <entry key="M5" value="28.618586800079456" />
-      <entry key="M10" value="52.99319430373043" />
-      <entry key="M15" value="74.53699644348936" />
-      <entry key="M30" value="116.85106019350437" />
-      <entry key="H1" value="172.82941506089782" />
-      <entry key="H2" value="239.69603109637896" />
-      <entry key="H4" value="297.1609232466313" />
-      <entry key="D1" value="366.1325374744281" />
-      <entry key="W1" value="380.518080461747" />
+      <entry key="MS100" value="0.9526379980439373" />
+      <entry key="MS500" value="0.9903428723706772" />
+      <entry key="S2" value="1.0105116338012194" />
+      <entry key="S5" value="1.5263589239619655" />
+      <entry key="S10" value="3.1438446943410754" />
+      <entry key="S30" value="7.485605727192122" />
+      <entry key="S60" value="12.30437360808571" />
+      <entry key="M2" value="29.583164848617653" />
+      <entry key="M5" value="88.7175517482993" />
+      <entry key="M10" value="168.33198877780185" />
+      <entry key="M15" value="234.03890127264214" />
+      <entry key="M30" value="413.83705843404084" />
+      <entry key="H1" value="677.246546588688" />
+      <entry key="H2" value="951.472170455297" />
+      <entry key="H4" value="1169.5780379659852" />
+      <entry key="D1" value="1424.761930641" />
+      <entry key="W1" value="1477.8376254341767" />
     </decayedShown>
   </component>
   <component name="ProblemsViewState">
-    <option name="selectedTabId" value="Toolset" />
+    <option name="selectedTabId" value="SWEA" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 2,
@@ -121,31 +129,31 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    ".NET Launch Settings Profile.RemoteLink.Host.executor": "Run",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Publish to folder.Publish Host.executor": "Run",
-    "RunOnceActivity.MCP Project settings loaded": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.cidr.known.project.marker": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.readMode.enableVisualFormatting": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "cidr.known.project.marker": "true",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "master",
-    "junie.onboarding.icon.badge.shown": "true",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "to.speed.mode.migration.done": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;.NET Launch Settings Profile.RemoteLink.Host.executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Publish to folder.Publish Host.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;
   }
-}]]></component>
-  <component name="RunManager" selected="Publish to folder.Publish Host">
+}</component>
+  <component name="RunManager" selected=".NET Launch Settings Profile.RemoteLink.Host">
     <configuration name="Publish Host" type="DotNetFolderPublish" factoryName="Publish to folder">
       <riderPublish configuration="Release" platform="Any CPU" produce_single_file="true" self_contained="true" target_folder="$PROJECT_DIR$/Artifacts/Host" target_framework="net10.0" uuid_high="-7830479812831787127" uuid_low="-6643067045281006256">
         <runtimes>
