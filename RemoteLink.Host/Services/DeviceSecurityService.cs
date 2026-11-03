@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using RemoteLink.Core.Models;
 
 namespace RemoteLink.Host.Services
@@ -128,6 +129,20 @@ namespace RemoteLink.Host.Services
         public void Dispose()
         {
             _privateKey.Dispose();
+        }
+        
+        public X509Certificate2 CreateServerCertificate()
+        {
+            CertificateRequest request = new($"CN={_deviceIdentity.DeviceId}", _privateKey, HashAlgorithmName.SHA256);
+            
+            request.CertificateExtensions.Add(new X509BasicConstraintsExtension(false, false, 0, true));
+            request.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature, true));
+            request.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(new OidCollection
+            {
+                new Oid("1.3.6.1.5.5.7.3.1")
+            }, true));
+
+            return request.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-5), DateTimeOffset.UtcNow.AddYears(1));
         }
     }
 }

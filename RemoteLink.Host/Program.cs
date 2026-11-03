@@ -1,3 +1,4 @@
+using System.Net;
 using RemoteLink.Host.Services;
 
 namespace RemoteLink.Host
@@ -16,7 +17,31 @@ namespace RemoteLink.Host
 
             builder.Services.AddHostedService(provider => provider.GetRequiredService<LanDiscoveryService>());
             
+            builder.WebHost.ConfigureKestrel(options =>
+            {
+                options.Listen(IPAddress.Loopback, 5017);
+
+                options.ListenAnyIP(5019, listenOptions =>
+                {
+                    DeviceSecurityService security = listenOptions.ApplicationServices.GetRequiredService<DeviceSecurityService>();
+
+                    listenOptions.UseHttps(security.CreateServerCertificate());
+                });
+            });
+            
             WebApplication app = builder.Build();
+
+            app.Use(async (context, next) =>
+            {
+                if (context.Connection.LocalPort == 5019 && !context.Request.Path.Equals("/api/lan/identity", StringComparison.OrdinalIgnoreCase))
+                {
+                    context.Response.StatusCode = 404;
+
+                    return;
+                }
+
+                await next();
+            });
 
             app.MapControllers();
             
