@@ -1,4 +1,5 @@
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
 using RemoteLink.Host.Services;
 
 namespace RemoteLink.Host
@@ -13,6 +14,7 @@ namespace RemoteLink.Host
             
             builder.Services.AddSingleton<DeviceIdentityService>();
             builder.Services.AddSingleton<DeviceSecurityService>();
+            builder.Services.AddSingleton<TlsCertificateService>();
             builder.Services.AddSingleton<LanDiscoveryService>();
 
             builder.Services.AddHostedService(provider => provider.GetRequiredService<LanDiscoveryService>());
@@ -23,9 +25,9 @@ namespace RemoteLink.Host
 
                 options.ListenAnyIP(5019, listenOptions =>
                 {
-                    DeviceSecurityService security = listenOptions.ApplicationServices.GetRequiredService<DeviceSecurityService>();
+                    TlsCertificateService tls = listenOptions.ApplicationServices.GetRequiredService<TlsCertificateService>();
 
-                    listenOptions.UseHttps(security.CreateServerCertificate());
+                    listenOptions.UseHttps(tls.GetCertificate());
                 });
             });
             

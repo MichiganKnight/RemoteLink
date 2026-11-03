@@ -1,5 +1,4 @@
 using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
 using RemoteLink.Core.Models;
 
 namespace RemoteLink.Host.Services
@@ -12,11 +11,11 @@ namespace RemoteLink.Host.Services
         public DeviceSecurityService(DeviceIdentityService deviceIdentity)
         {
             _deviceIdentity = deviceIdentity;
-            
+
             string directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RemoteLink", "Security");
-            
+
             Directory.CreateDirectory(directory);
-            
+
             string keyPath = Path.Combine(directory, "device-key.bin");
 
             if (File.Exists(keyPath))
@@ -57,7 +56,7 @@ namespace RemoteLink.Host.Services
                 {
                     CryptographicOperations.ZeroMemory(privateKey);
                 }
-                
+
                 Console.WriteLine("[Security] Existing device identity loaded.");
             }
             else
@@ -89,7 +88,7 @@ namespace RemoteLink.Host.Services
                     {
                         throw new IOException($"Device security key was not saved: {keyPath}");
                     }
-                    
+
                     Console.WriteLine($"[Security] Encrypted key saved successfully: {keyPath}");
 
                     _privateKey = newKey;
@@ -99,7 +98,7 @@ namespace RemoteLink.Host.Services
                 catch
                 {
                     newKey.Dispose();
-                    
+
                     throw;
                 }
             }
@@ -120,7 +119,7 @@ namespace RemoteLink.Host.Services
                 Fingerprint = Convert.ToHexString(fingerprint)
             };
         }
-        
+
         public byte[] SignData(byte[] data)
         {
             return _privateKey.SignData(data, HashAlgorithmName.SHA256);
@@ -129,20 +128,6 @@ namespace RemoteLink.Host.Services
         public void Dispose()
         {
             _privateKey.Dispose();
-        }
-        
-        public X509Certificate2 CreateServerCertificate()
-        {
-            CertificateRequest request = new($"CN={_deviceIdentity.DeviceId}", _privateKey, HashAlgorithmName.SHA256);
-            
-            request.CertificateExtensions.Add(new X509BasicConstraintsExtension(false, false, 0, true));
-            request.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature, true));
-            request.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(new OidCollection
-            {
-                new Oid("1.3.6.1.5.5.7.3.1")
-            }, true));
-
-            return request.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-5), DateTimeOffset.UtcNow.AddYears(1));
         }
     }
 }
