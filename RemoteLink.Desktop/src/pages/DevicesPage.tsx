@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+import IncomingPairingRequests from "../components/IncomingPairingRequests";
+
 import type { DiscoveredDevice } from "../types/electron";
 
 export default function DevicesPage() {
@@ -55,6 +57,8 @@ export default function DevicesPage() {
 
     return (
         <div>
+            <IncomingPairingRequests />
+
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h5 className="mb-1">

@@ -7,7 +7,7 @@ namespace RemoteLink.Host.Controllers
 {
     [ApiController]
     [Route("api/local/pairing")]
-    public class LocalPairingController(PairingClientService client) : ControllerBase
+    public class LocalPairingController(PairingClientService client, PairingSessionService sessions) : ControllerBase
     {
         [HttpPost("start")]
         public async Task<IActionResult> Start([FromBody] StartPairingRequest request, CancellationToken cancellationToken)
@@ -35,6 +35,19 @@ namespace RemoteLink.Host.Controllers
             {
                 return StatusCode(504, "The remote Host did not respond in time.");
             }
+        }
+
+        [HttpGet("incoming")]
+        public IActionResult GetIncomingRequests()
+        {
+            if (HttpContext.Connection.LocalPort != 5017 || HttpContext.Connection.RemoteIpAddress is not { } remoteAddress || !IPAddress.IsLoopback(remoteAddress))
+            {
+                return NotFound();
+            }
+
+            IReadOnlyList<PairingRequest> requests = sessions.GetRequests();
+
+            return Ok(requests);
         }
     }
 }

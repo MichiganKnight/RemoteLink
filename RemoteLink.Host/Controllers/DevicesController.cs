@@ -6,12 +6,12 @@ namespace RemoteLink.Host.Controllers
 {
     [ApiController]
     [Route("api/devices")]
-    public sealed class DevicesController(LanDiscoveryService _discovery, DeviceIdentityService _identity) : ControllerBase
+    public sealed class DevicesController(LanDiscoveryService discovery, DeviceIdentityService identity) : ControllerBase
     {
         [HttpGet]
         public ActionResult<IReadOnlyList<DiscoveredDevice>> GetDevices()
         {
-            return Ok(_discovery.GetDevices());
+            return Ok(discovery.GetDevices());
         }
 
         [HttpGet("local")]
@@ -19,8 +19,8 @@ namespace RemoteLink.Host.Controllers
         {
             return Ok(new
             {
-                Id = _identity.DeviceId,
-                Name = _identity.DeviceName,
+                Id = identity.DeviceId,
+                Name = identity.DeviceName,
                 DiscoveryPort = 5018
             });
         }

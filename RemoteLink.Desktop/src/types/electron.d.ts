@@ -19,6 +19,18 @@ export interface DiscoveredDevice {
     isOnline: boolean;
 }
 
+
+export interface IncomingPairingRequest {
+    requestId: string;
+    deviceId: string;
+    deviceName: string;
+    publicKey: string;
+    fingerprint: string;
+    createdUtc: string;
+    expiresUtc: string;
+    status: number;
+}
+
 declare global {
     interface Window {
         remoteLink: {
@@ -28,6 +40,7 @@ declare global {
 
             getHostStatus: () => Promise<HostStatus>;
             getDevices: () => Promise<DiscoveredDevice[]>;
+            getIncomingPairingRequests: () => Promise<IncomingPairingRequest[]>;
         }
     }
 }

@@ -100,6 +100,18 @@ function registerIpcHandlers() {
             clearTimeout(timeout);
         }
     });
+
+    ipcMain.handle("pairing:get-incoming", async () => {
+        const response = await fetch("http://127.0.0.1:5017/api/local/pairing/incoming", {
+            signal: AbortSignal.timeout(5000)
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to load pairing requests: ${response.status}`);
+        }
+
+        return await response.json();
+    });
 }
 
 function createWindow() {

@@ -6,5 +6,6 @@ contextBridge.exposeInMainWorld("remoteLink", {
     appName: "RemoteLink",
 
     getHostStatus: () => ipcRenderer.invoke("host:get-status"),
-    getDevices: () => ipcRenderer.invoke("devices:get-all")
+    getDevices: () => ipcRenderer.invoke("devices:get-all"),
+    getIncomingPairingRequests: () => ipcRenderer.invoke("pairing:get-incoming")
 });
