@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 using RemoteLink.Core.Models.Pairing;
 using RemoteLink.Host.Services;
 
-namespace RemoteLink.Host.Tests
+namespace RemoteLink.Tests
 {
     public sealed class PairingSecurityTests
     {

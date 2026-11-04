@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Mvc;
+using RemoteLink.Core.Models;
 using RemoteLink.Core.Models.Pairing;
 using RemoteLink.Host.Services;
 
@@ -9,7 +10,7 @@ namespace RemoteLink.Host.Controllers
 {
     [ApiController]
     [Route("api/lan/pairing")]
-    public sealed class LanPairingController(PairingSessionService sessions, PairingSecurityService security, DeviceIdentityService localIdentity, PairingCryptoSessionService cryptoSessions) : ControllerBase
+    public sealed class LanPairingController(PairingSessionService sessions, PairingSecurityService security, DeviceIdentityService localIdentity, PairingCryptoSessionService cryptoSessions, DeviceSecurityService deviceSecurity) : ControllerBase
     {
         private static readonly ConcurrentDictionary<string, DateTime> RecentRequests = new();
 
@@ -99,6 +100,52 @@ namespace RemoteLink.Host.Controllers
                 
                 throw;
             }
+        }
+
+        [HttpPost("handshake/{requestId:guid}")]
+        public IActionResult Handshake(Guid requestId)
+        {
+            if (HttpContext.Connection.LocalPort != 5019)
+            {
+                return NotFound();
+            }
+            
+            PairingRequest? request = sessions.GetRequest(requestId);
+
+            if (request is null || request.Status != PairingStatus.Pending)
+            {
+                return NotFound("No pending pairing request exists.");
+            }
+            
+            PairingCryptoSessionInfo? session = cryptoSessions.GetSession(requestId);
+            
+            if (session is null || session.Role != PairingCryptoRole.Responder || session.RemoteDeviceId != request.DeviceId)
+            {
+                return Conflict("The responder session is unavailable.");
+            }
+
+            DeviceSecurityIdentity localPublicIdentity = deviceSecurity.GetPublicIdentity();
+
+            byte[] initiatorIdentityKey = Convert.FromBase64String(request.PublicKey);
+            
+            byte[] responderIdentityKey = Convert.FromBase64String(localPublicIdentity.PublicKey);
+            
+            bool transcriptCreated = cryptoSessions.TryCreateTranscript(requestId, request.DeviceId, localIdentity.DeviceId, initiatorIdentityKey, responderIdentityKey, security, out byte[] transcriptHash);
+            
+            if (!transcriptCreated)
+            {
+                return Conflict("Unable to construct pairing transcript.");
+            }
+            
+            SignedPairingMessage signedMessage = security.CreateSignedMessage(requestId, localIdentity.DeviceId,responderIdentityKey, session.LocalEphemeralPublicKey, transcriptHash, deviceSecurity);
+
+            return Ok(new PairingHandshakeResponse
+            {
+                RequestId = requestId,
+                ResponderDeviceId = localIdentity.DeviceId,
+                ResponderDeviceName = localIdentity.DeviceName,
+                SignedMessage = signedMessage
+            });
         }
     }
 }

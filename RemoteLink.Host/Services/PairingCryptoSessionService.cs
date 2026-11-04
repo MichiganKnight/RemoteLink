@@ -62,6 +62,33 @@ namespace RemoteLink.Host.Services
             }
         }
 
+        public bool TryCreateTranscript(Guid requestId, Guid initiatorDeviceId, Guid responderDeviceId, byte[] initiatorIdentityKey, byte[] responderIdentityKey, PairingSecurityService security, out byte[] transcriptHash)
+        {
+            transcriptHash = [];
+
+            lock (_sync)
+            {
+                ObjectDisposedException.ThrowIf(_disposed, this);
+
+                CleanupExpiredCore();
+
+                if (!_sessions.TryGetValue(requestId, out Session? session) || session.RemoteEphemeralPublicKey is null)
+                {
+                    return false;
+                }
+                
+                byte[] initiatorEphemeralKey = session.Role == PairingCryptoRole.Initiator ? session.LocalEphemeralPublicKey : session.RemoteEphemeralPublicKey;
+
+                byte[] responderEphemeralKey = session.Role == PairingCryptoRole.Responder ? session.LocalEphemeralPublicKey : session.RemoteEphemeralPublicKey;
+
+                byte[] transcript = security.CreateTranscript(requestId, initiatorDeviceId, responderDeviceId, initiatorIdentityKey, responderIdentityKey, initiatorEphemeralKey, responderEphemeralKey);
+                
+                transcriptHash = security.CreateTranscriptHash(transcript);
+                
+                return true;
+            }
+        }
+
         public PairingCryptoSessionInfo? GetSession(Guid requestId)
         {
             lock (_sync)

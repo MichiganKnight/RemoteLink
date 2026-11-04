@@ -43,6 +43,7 @@ namespace RemoteLink.Host
                     bool allowed = context.Request.Method == HttpMethods.Get && context.Request.Path.Equals("/api/lan/identity", StringComparison.OrdinalIgnoreCase);
                     
                     allowed |= context.Request.Method == HttpMethods.Post && context.Request.Path.Equals("/api/lan/pairing/propose", StringComparison.OrdinalIgnoreCase);
+                    allowed |= context.Request.Method == HttpMethods.Post && context.Request.Path.StartsWithSegments("/api/lan/pairing/handshake", StringComparison.OrdinalIgnoreCase);
 
                     if (!allowed)
                     {
