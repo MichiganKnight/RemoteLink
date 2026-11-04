@@ -13,11 +13,15 @@ namespace RemoteLink.Host
 
             builder.Services.AddControllers();
 
+            string dataDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RemoteLink", "Data");
+            
+            Directory.CreateDirectory(dataDirectory);
+            
+            string databasePath = Path.Combine(dataDirectory, "remotelink.db");
+            
             builder.Services.AddDbContext<RemoteLinkDbContext>(options =>
             {
-                string connectionString = builder.Configuration.GetConnectionString("RemoteLink") ?? throw new InvalidOperationException("RemoteLink database connection string is missing.");
-                
-                options.UseSqlServer(connectionString);
+                options.UseSqlite($"Data Source={databasePath}");
             });
             
             builder.Services.AddSingleton<DeviceIdentityService>();
@@ -52,6 +56,13 @@ namespace RemoteLink.Host
             });
             
             WebApplication app = builder.Build();
+
+            using (IServiceScope scope = app.Services.CreateScope())
+            {
+                RemoteLinkDbContext database = scope.ServiceProvider.GetRequiredService<RemoteLinkDbContext>();
+                
+                database.Database.Migrate();
+            }
 
             app.Use(async (context, next) =>
             {

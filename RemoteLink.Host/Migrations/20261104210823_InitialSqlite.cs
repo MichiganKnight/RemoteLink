@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace RemoteLink.Host.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialChatSchema : Migration
+    public partial class InitialSqlite : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,11 +15,11 @@ namespace RemoteLink.Host.Migrations
                 name: "ChatConversations",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    RemoteDeviceId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    CreatedUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    LastMessageUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    LastReadUtc = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    RemoteDeviceId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    CreatedUtc = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    LastMessageUtc = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    LastReadUtc = table.Column<DateTime>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -30,17 +30,17 @@ namespace RemoteLink.Host.Migrations
                 name: "ChatMessages",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ConversationId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    SenderDeviceId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    RecipientDeviceId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Content = table.Column<string>(type: "nvarchar(max)", maxLength: 10000, nullable: false),
-                    Direction = table.Column<int>(type: "int", nullable: false),
-                    Status = table.Column<int>(type: "int", nullable: false),
-                    CreatedUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    SentUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    DeliveredUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    ReadUtc = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    ConversationId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    SenderDeviceId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    RecipientDeviceId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Content = table.Column<string>(type: "TEXT", maxLength: 10000, nullable: false),
+                    Direction = table.Column<int>(type: "INTEGER", nullable: false),
+                    Status = table.Column<int>(type: "INTEGER", nullable: false),
+                    CreatedUtc = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    SentUtc = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    DeliveredUtc = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    ReadUtc = table.Column<DateTime>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
