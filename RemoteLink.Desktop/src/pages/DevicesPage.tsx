@@ -2,11 +2,38 @@ import { useEffect, useState } from "react";
 
 import IncomingPairingRequests from "../components/IncomingPairingRequests";
 
-import type { DiscoveredDevice, PairingHandshakeVerification } from "../types/electron";
+import type { DiscoveredDevice, PairingHandshakeVerification, PairingApprovalState, TrustedDevice } from "../types/electron";
 
 export default function DevicesPage() {
     const [devices, setDevices] = useState<DiscoveredDevice[]>([]);
     const [loading, setLoading] = useState(true);
+    const [trusted, setTrusted] = useState<TrustedDevice[]>([]);
+    const [decision, setDecision] = useState<PairingApprovalState | null>(null);
+    const [decisionBusy, setDecisionBusy] = useState(false);
+    const [pairedMessage, setPairedMessage] = useState<string | null>(null);
+
+    async function chooseDecision(approved: boolean) {
+        if (!verification) {
+            return;
+        }
+
+        setDecisionBusy(true); setPairingError(null);
+
+        try {
+            const result = await window.remoteLink.decideOutgoingPairing(verification.requestId, approved);
+
+            setDecision(result);
+
+            if (!approved) {
+                setVerification(null);
+            }
+        } catch (e) {
+            setPairingError(e instanceof Error ? e.message : "Decision delivery failed. Try again.");
+        } finally {
+            setDecisionBusy(false);
+        }
+    }
+
     const [error, setError] = useState<string | null>(null);
 
     const [pairingDeviceId, setPairingDeviceId] = useState<string | null>(null);
@@ -28,9 +55,11 @@ export default function DevicesPage() {
 
             try {
                 const result = await window.remoteLink.getDevices();
+                const paired = await window.remoteLink.getTrustedDevices();
 
                 if (active) {
                     setDevices(result);
+                    setTrusted(paired);
                     setError(null);
                 }
             } catch (error) {
@@ -77,12 +106,67 @@ export default function DevicesPage() {
             }
 
             setVerification(result);
+            setDecision(null); setPairedMessage(null);
         } catch (error) {
             setPairingError(error instanceof Error ? error.message : "Unable to initiate pairing.");
         } finally {
             setPairingDeviceId(null);
         }
     }
+
+    useEffect(() => {
+        if (!verification || decision?.localDecision !== 1) return;
+
+        let cancelled = false;
+        let running = false;
+
+        const check = async () => {
+            if (running) {
+                return;
+            }
+
+            running = true;
+
+            try {
+                const state = await window.remoteLink.getOutgoingDecision(verification.requestId);
+
+                if (cancelled) {
+                    return;
+                }
+
+                setDecision(state);
+
+                if (state.rejected) {
+                    setPairingError("Pairing was rejected.");
+                    setVerification(null); return;
+                }
+
+                if (state.bothApproved) {
+                    const paired = await window.remoteLink.finalizePairing(verification.requestId);
+
+                    if (!cancelled) {
+                        setPairedMessage(`${paired.deviceName} paired successfully.`);
+                        setVerification(null);
+                        setTrusted(await window.remoteLink.getTrustedDevices());
+                    }
+                }
+            } catch (e) {
+                if (!cancelled) {
+                    setPairingError(e instanceof Error ? e.message : "Unable to refresh pairing status");
+                }
+            } finally {
+                running = false;
+            }
+        };
+        void check();
+
+        const timer = window.setInterval(() => void check(), 2500);
+
+        return () => {
+            cancelled = true;
+            window.clearInterval(timer);
+        };
+    }, [verification, decision?.localDecision]);
 
     return (
         <div>
@@ -110,6 +194,36 @@ export default function DevicesPage() {
                     {error}
                 </div>
             )}
+
+            {pairedMessage &&
+                <div className="alert alert-success">
+                    {pairedMessage}
+                </div>
+            }
+
+            {trusted.length > 0 &&
+                <section className="mb-4">
+                    <h5>Paired Devices</h5>
+
+                    <div className="row g-3">
+                        {trusted.filter(d => d.isTrusted).map(d =>
+                            <div className="col-md-6" key={d.deviceId}>
+                                <div className="content-card">
+                                    <strong>{d.deviceName}</strong>
+
+                                    <div className="small text-secondary font-monospace text-break">
+                                        {d.fingerprint}
+                                    </div>
+
+                                    <span className="badge text-bg-success mt-2">
+                                        Trusted
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </section>
+            }
 
             {pairingError && (
                 <div className="alert alert-danger" role="alert">
@@ -164,9 +278,21 @@ export default function DevicesPage() {
                         The remote device has not yet completed mutual verification. Do not treat this device as trusted.
                     </div>
 
-                    <button type="button" className="btn btn-outline-secondary" onClick={() => setVerification(null)}>
-                        Dismiss
-                    </button>
+                    <div className="d-flex gap-2">
+                        <button type="button" className="btn btn-primary" disabled={decisionBusy || (decision?.localDecision ?? 0) !== 0} onClick={() => void chooseDecision(true)}>
+                            Confirm Match
+                        </button>
+
+                        <button type="button" className="btn btn-outline-danger" disabled={decisionBusy || (decision?.localDecision ?? 0) !== 0} onClick={() => void chooseDecision(false)}>
+                            Reject
+                        </button>
+                    </div>
+
+                    {decision?.localDecision === 1 &&
+                        <div className="text-secondary mt-3">
+                            Approved locally. Waiting for the other computer...
+                        </div>
+                    }
                 </div>
             )}
 
@@ -215,10 +341,10 @@ export default function DevicesPage() {
                                 </div>
 
                                 <div className="mt-3">
-                                    <button type="button" className="btn btn-primary btn-sm" disabled={!device.isOnline || pairingDeviceId !== null || verification !== null} onClick={() => {
+                                    <button type="button" className="btn btn-primary btn-sm" disabled={!device.isOnline || pairingDeviceId !== null || verification !== null || trusted.some(d => d.deviceId === device.id && d.isTrusted)} onClick={() => {
                                         void handlePair(device)
                                     }}>
-                                        {pairingDeviceId === device.id ? (
+                                        {trusted.some(d => d.deviceId === device.id && d.isTrusted) ? "Already Paired" : pairingDeviceId === device.id ? (
                                             <>
                                                 <span className="spinner-border spinner-border-sm me-2" aria-hidden="true"/>
                                                 Pairing...
