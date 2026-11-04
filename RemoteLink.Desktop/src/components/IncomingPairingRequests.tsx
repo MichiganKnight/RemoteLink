@@ -21,9 +21,7 @@ export default function IncomingPairingRequests() {
             }));
         } catch (e){
             setError(e instanceof Error ? e.message : "Decision failed");
-        }
-
-        finally {
+        } finally {
             setBusy(null);
         }
     }
