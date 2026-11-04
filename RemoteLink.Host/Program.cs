@@ -51,6 +51,7 @@ namespace RemoteLink.Host
                     allowed |= context.Request.Method == HttpMethods.Post && context.Request.Path.StartsWithSegments("/api/lan/pairing/confirm-initiator", StringComparison.OrdinalIgnoreCase);
                     allowed |= context.Request.Method == HttpMethods.Post && context.Request.Path.StartsWithSegments("/api/lan/pairing/decision", StringComparison.OrdinalIgnoreCase);
                     allowed |= context.Request.Method == HttpMethods.Get && context.Request.Path.StartsWithSegments("/api/lan/pairing/decision", StringComparison.OrdinalIgnoreCase);
+                    allowed |= context.Request.Method == HttpMethods.Post && context.Request.Path.StartsWithSegments("/api/lan/pairing/finalize", StringComparison.OrdinalIgnoreCase);
 
                     if (!allowed)
                     {
