@@ -40,6 +40,7 @@ namespace RemoteLink.Host
             builder.Services.AddSingleton<TrustedPeerClientService>();
 
             builder.Services.AddScoped<ChatService>();
+            builder.Services.AddScoped<ChatDeliveryService>();
 
             builder.Services.AddHostedService(provider => provider.GetRequiredService<LanDiscoveryService>());
             
@@ -70,15 +71,17 @@ namespace RemoteLink.Host
                 {
                     bool allowed = context.Request.Method == HttpMethods.Get && context.Request.Path.Equals("/api/lan/identity", StringComparison.OrdinalIgnoreCase);
                     
+                    allowed |= context.Request.Method == HttpMethods.Get && context.Request.Path.StartsWithSegments("/api/lan/pairing/decision", StringComparison.OrdinalIgnoreCase);
                     allowed |= context.Request.Method == HttpMethods.Post && context.Request.Path.Equals("/api/lan/pairing/propose", StringComparison.OrdinalIgnoreCase);
                     allowed |= context.Request.Method == HttpMethods.Post && context.Request.Path.StartsWithSegments("/api/lan/pairing/handshake", StringComparison.OrdinalIgnoreCase);
                     allowed |= context.Request.Method == HttpMethods.Post && context.Request.Path.StartsWithSegments("/api/lan/pairing/confirm-initiator", StringComparison.OrdinalIgnoreCase);
                     allowed |= context.Request.Method == HttpMethods.Post && context.Request.Path.StartsWithSegments("/api/lan/pairing/decision", StringComparison.OrdinalIgnoreCase);
-                    allowed |= context.Request.Method == HttpMethods.Get && context.Request.Path.StartsWithSegments("/api/lan/pairing/decision", StringComparison.OrdinalIgnoreCase);
                     allowed |= context.Request.Method == HttpMethods.Post && context.Request.Path.StartsWithSegments("/api/lan/pairing/finalize", StringComparison.OrdinalIgnoreCase);
                     
                     allowed |= context.Request.Method == HttpMethods.Post && context.Request.Path.Equals("/api/lan/auth/challenge", StringComparison.OrdinalIgnoreCase);
                     allowed |= context.Request.Method == HttpMethods.Post && context.Request.Path.Equals("/api/lan/auth/complete", StringComparison.OrdinalIgnoreCase);
+                    
+                    allowed |= context.Request.Method == HttpMethods.Post && context.Request.Path.Equals("/api/lan/chat/messages", StringComparison.OrdinalIgnoreCase);
 
                     if (!allowed)
                     {

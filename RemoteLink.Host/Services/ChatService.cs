@@ -1,5 +1,7 @@
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using RemoteLink.Core.Models.Chat;
+using RemoteLink.Core.Models.Chat.Requests;
 using RemoteLink.Core.Models.Chat.Responses;
 using RemoteLink.Host.Data;
 
@@ -164,6 +166,136 @@ namespace RemoteLink.Host.Services
             return messages.Where(m => trustedDevices.GetDevice(m.RecipientDeviceId) is { IsTrusted: true })
                 .Select(ToResponse)
                 .ToList();
+        }
+
+        public async Task<ChatDeliveryAcknowledgment> ReceiveMessageAsync(Guid authenticatedDeviceId, ReceiveChatMessageRequest request, CancellationToken cancellationToken = default)
+        {
+            EnsureTrusted(authenticatedDeviceId);
+
+            if (request.MessageId == Guid.Empty || request.SenderDeviceId != authenticatedDeviceId || request.RecipientDeviceId != identity.DeviceId)
+            {
+                throw new ArgumentException("Invalid message identifiers.");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.Content) || request.Content.Length > 10000)
+            {
+                throw new ArgumentException("Invalid message content.");
+            }
+
+            if (request.CreatedUtc.Kind != DateTimeKind.Utc || request.CreatedUtc > DateTime.UtcNow.AddMinutes(5))
+            {
+                throw new ArgumentException("Invalid message timestamp.");
+            }
+            
+            ChatMessage? existing = await database.ChatMessages.AsNoTracking().FirstOrDefaultAsync(m => m.Id == request.MessageId, cancellationToken);
+
+            if (existing is not null)
+            {
+                if (existing.Direction != ChatMessageDirection.Incoming || existing.SenderDeviceId != authenticatedDeviceId || existing.RecipientDeviceId != identity.DeviceId || existing.Content != request.Content || existing.CreatedUtc != request.CreatedUtc)
+                {
+                    throw new InvalidOperationException("The message ID is already associated with different content.");
+                }
+
+                return new ChatDeliveryAcknowledgment
+                {
+                    MessageId = existing.Id,
+                    ReceivingDeviceId = identity.DeviceId,
+                    DeliveredUtc = existing.DeliveredUtc ?? existing.CreatedUtc
+                };
+            }
+
+            await OpenConversationAsync(authenticatedDeviceId, cancellationToken);
+
+            ChatConversation conversation = await database.ChatConversations.SingleAsync(c => c.RemoteDeviceId == authenticatedDeviceId, cancellationToken);
+
+            DateTime now = DateTime.UtcNow;
+
+            ChatMessage message = new()
+            {
+                Id = request.MessageId,
+                ConversationId = conversation.Id,
+                SenderDeviceId = authenticatedDeviceId,
+                RecipientDeviceId = identity.DeviceId,
+                Content = request.Content,
+                Direction = ChatMessageDirection.Incoming,
+                Status = ChatMessageStatus.Delivered,
+                CreatedUtc = request.CreatedUtc,
+                DeliveredUtc = now
+            };
+
+            database.ChatMessages.Add(message);
+
+            if (conversation.LastMessageUtc is null || conversation.LastMessageUtc < now)
+            {
+                conversation.LastMessageUtc = now;
+            }
+
+            try
+            {
+                await database.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException exception)when (exception.InnerException is SqliteException
+                                                     {
+                                                         SqliteErrorCode: 19
+                                                     })
+            {
+                database.Entry(message).State = EntityState.Detached;
+                database.Entry(conversation).State = EntityState.Detached;
+
+                ChatMessage? duplicate = await database.ChatMessages.AsNoTracking().FirstOrDefaultAsync(m => m.Id == request.MessageId, cancellationToken);
+
+                if (duplicate is null || duplicate.Direction != ChatMessageDirection.Incoming || duplicate.SenderDeviceId != authenticatedDeviceId || duplicate.RecipientDeviceId != identity.DeviceId ||
+                    duplicate.Content != request.Content || duplicate.CreatedUtc != request.CreatedUtc)
+                {
+                    throw;
+                }
+
+                return new ChatDeliveryAcknowledgment
+                {
+                    MessageId = duplicate.Id,
+                    ReceivingDeviceId = identity.DeviceId,
+                    DeliveredUtc = duplicate.DeliveredUtc ?? duplicate.CreatedUtc
+                };
+            }
+
+            return new ChatDeliveryAcknowledgment
+            {
+                MessageId = message.Id,
+                ReceivingDeviceId = identity.DeviceId,
+                DeliveredUtc = now
+            };
+        }
+
+        public async Task<bool> MarkMessageDeliveredAsync(Guid messageId, Guid remoteDeviceId, DateTime deliveredUtc, CancellationToken cancellationToken = default)
+        {
+            EnsureTrusted(remoteDeviceId);
+
+            ChatMessage? message = await database.ChatMessages.FirstOrDefaultAsync(m => m.Id == messageId && m.RecipientDeviceId == remoteDeviceId && m.Direction == ChatMessageDirection.Outgoing, cancellationToken);
+
+            if (message is null)
+            {
+                return false;
+            }
+
+            if (message.Status == ChatMessageStatus.Delivered || message.Status == ChatMessageStatus.Read)
+            {
+                return true;
+            }
+
+            if (message.Status != ChatMessageStatus.Pending && message.Status != ChatMessageStatus.Sent)
+            {
+                return false;
+            }
+
+            DateTime now = DateTime.UtcNow;
+
+            message.Status = ChatMessageStatus.Delivered;
+            message.SentUtc ??= now;
+            message.DeliveredUtc = deliveredUtc;
+
+            await database.SaveChangesAsync(cancellationToken);
+
+            return true;
         }
 
         private async Task<ChatConversationResponse> GetConversationResponseAsync(ChatConversation conversation, CancellationToken cancellationToken)
