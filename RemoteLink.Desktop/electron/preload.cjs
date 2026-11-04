@@ -11,5 +11,6 @@ contextBridge.exposeInMainWorld("remoteLink", {
 
     startPairing: (request) => ipcRenderer.invoke("pairing:start", request),
     verifyPairing: (request) => ipcRenderer.invoke("pairing:verify", request),
-    startDiscoveredPairing: (deviceId) => ipcRenderer.invoke("pairing:start-discovered", deviceId)
+    startDiscoveredPairing: (deviceId) => ipcRenderer.invoke("pairing:start-discovered", deviceId),
+    getLocalPairingVerification: (requestId) => ipcRenderer.invoke("pairing:get-local-verification", requestId)
 });

@@ -59,6 +59,14 @@ export interface PairingHandshakeVerification {
     signatureVerified: boolean;
 }
 
+export interface PairingLocalVerification {
+    requestId: string;
+    remoteDeviceId: string;
+    remoteDeviceName: string;
+    verificationCode: string;
+    expiresUtc: string;
+}
+
 declare global {
     interface Window {
         remoteLink: {
@@ -73,6 +81,7 @@ declare global {
             startPairing: (request: StartPairingRequest) => Promise<PairingProposalResponse>;
             verifyPairing: (request: VerifyPairingRequest) => Promise<PairingHandshakeVerification>;
             startDiscoveredPairing: (deviceId: string) => Promise<PairingHandshakeVerification>;
+            getLocalPairingVerification: (requestId: string) => Promise<PairingLocalVerification>;
         }
     }
 }

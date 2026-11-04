@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { IncomingPairingRequest } from "../types/electron";
+import type { IncomingPairingRequest, PairingLocalVerification } from "../types/electron";
 
 const PAIRING_STATUS_PENDING = 0;
 
@@ -7,6 +7,8 @@ export default function IncomingPairingRequests() {
     const [requests, setRequests] = useState<IncomingPairingRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    const [verifications, setVerifications] = useState<Record<string, PairingLocalVerification>>({});
 
     useEffect(() => {
         let active = true;
@@ -20,11 +22,27 @@ export default function IncomingPairingRequests() {
             refreshing = true;
 
             try {
-                const result =
-                    await window.remoteLink.getIncomingPairingRequests();
+                const result = await window.remoteLink.getIncomingPairingRequests();
 
                 if (active) {
                     setRequests(result);
+
+                    const pending = result.filter(request => request.status === PAIRING_STATUS_PENDING && new Date(request.expiresUtc).getTime() > Date.now());
+
+                    const results = await Promise.allSettled(pending.map(request => window.remoteLink.getLocalPairingVerification(request.requestId)));
+
+                    if (active) {
+                        const next: Record<string, PairingLocalVerification> = {};
+
+                        results.forEach((result, index) => {
+                            if (result.status === "fulfilled" && result.value.requestId === pending[index].requestId && new Date(result.value.expiresUtc).getTime() >  Date.now()) {
+                                next[pending[index].requestId] = result.value;
+                            }
+                        });
+
+                        setVerifications(next);
+                    }
+
                     setError(null);
                 }
             } catch (exception) {
@@ -152,6 +170,29 @@ export default function IncomingPairingRequests() {
                                                 Reject
                                             </button>
                                         </div>
+
+                                        {verifications[request.requestId] && (
+                                            <div className="rounded p-3 mt-3 text-center" style={{ backgroundColor: "#151e2d", border: "1px solid #334155", color: "#f1f5f9" }}>
+                                                <div className="small mb-2" style={{ color: "#94a3b8" }}>
+                                                    <i className="bi bi-shield-lock me-2" />
+                                                    Provisional Verification Code
+                                                </div>
+
+                                                <div className="fw-bold font-monospace" style={{ fontSize: "2rem", letterSpacing: "0.2rem" }}>
+                                                    {verifications[request.requestId].verificationCode.slice(0, 3)}
+                                                    {" "}
+                                                    {verifications[request.requestId].verificationCode.slice(3)}
+                                                </div>
+
+                                                <div className="small text-break mt-2" style={{ color: "#94a3b8" }}>
+                                                    Request: {request.requestId}
+                                                </div>
+
+                                                <div className="small mt-2" style={{ color: "#94a3b8" }}>
+                                                    Not authorized until mutual verification completes.
+                                                </div>
+                                            </div>
+                                        )}
 
                                         <div className="small text-secondary mt-3">
                                             Approval will be enabled after secure

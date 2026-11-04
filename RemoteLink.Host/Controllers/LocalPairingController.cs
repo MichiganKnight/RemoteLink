@@ -9,7 +9,7 @@ namespace RemoteLink.Host.Controllers
 {
     [ApiController]
     [Route("api/local/pairing")]
-    public class LocalPairingController(PairingClientService client, PairingSessionService sessions, LanDiscoveryService discovery) : ControllerBase
+    public class LocalPairingController(PairingClientService client, PairingSessionService sessions, LanDiscoveryService discovery, PairingCryptoSessionService cryptoSessions, PairingSecurityService pairingSecurity, DeviceIdentityService identity, DeviceSecurityService deviceSecurity) : ControllerBase
     {
         [HttpPost("start")]
         public async Task<IActionResult> Start([FromBody] StartPairingRequest request, CancellationToken cancellationToken)
@@ -133,6 +133,53 @@ namespace RemoteLink.Host.Controllers
             catch (OperationCanceledException)when (!cancellationToken.IsCancellationRequested)
             {
                 return StatusCode(504, "The remote Host did not respond in time.");
+            }
+        }
+
+        [HttpGet("incoming/{requestId:guid}/verification")]
+        public IActionResult GetIncomingVerification(Guid requestId)
+        {
+            if (HttpContext.Connection.LocalPort != 5017 || HttpContext.Connection.RemoteIpAddress is not { } remoteIp || !IPAddress.IsLoopback(remoteIp))
+            {
+                return NotFound();
+            }
+            
+            PairingRequest? request = sessions.GetRequest(requestId);
+
+            if (request is null || request.Status != PairingStatus.Pending || request.ExpiresUtc <= DateTime.UtcNow)
+            {
+                return NotFound("No active pairing request exists.");
+            }
+            
+            PairingCryptoSessionInfo? session = cryptoSessions.GetSession(requestId);
+
+            if (session is null || session.Role != PairingCryptoRole.Responder || session.RemoteDeviceId != request.DeviceId || session.ExpiresUtc <= DateTime.UtcNow)
+            {
+                return Conflict("The responder session is unavailable.");
+            }
+
+            try
+            {
+                byte[] initiatorIdentityKey = Convert.FromBase64String(request.PublicKey);
+
+                DeviceSecurityIdentity localIdentity = deviceSecurity.GetPublicIdentity();
+
+                byte[] responderIdentityKey = Convert.FromBase64String(localIdentity.PublicKey);
+
+                string code = pairingSecurity.CalculateSessionVerificationCode(requestId, request.DeviceId, identity.DeviceId, initiatorIdentityKey, responderIdentityKey, cryptoSessions);
+
+                return Ok(new PairingLocalVerification
+                {
+                    RequestId = requestId,
+                    RemoteDeviceId = request.DeviceId,
+                    RemoteDeviceName = request.DeviceName,
+                    VerificationCode = code,
+                    ExpiresUtc = session.ExpiresUtc < request.ExpiresUtc ? session.ExpiresUtc : request.ExpiresUtc
+                });
+            }
+            catch (Exception exception) when (exception is FormatException or CryptographicException or InvalidOperationException)
+            {
+                return Conflict("The pairing verification code is unavailable.");
             }
         }
     }

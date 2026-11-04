@@ -174,6 +174,25 @@ function registerIpcHandlers() {
 
         return await response.json();
     });
+
+    ipcMain.handle("pairing:get-local-verification", async (_event, requestId) => {
+        if (typeof requestId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestId)) {
+            throw new Error("Invalid pairing request ID.");
+        }
+
+        const response = await fetch(`${HOST_URL}/api/local/pairing/incoming/${requestId}/verification`, {
+            signal: AbortSignal.timeout(5000),
+            headers: {
+                Accept: "application/json"
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Verification unavailable (${response.status})`);
+        }
+
+        return await response.json();
+    });
 }
 
 function createWindow() {

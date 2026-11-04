@@ -20,10 +20,12 @@
     <list default="true" id="3f37435d-db63-4300-bdfc-ac9e4eb902dc" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/RemoteLink.Desktop/electron/main.cjs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Desktop/electron/main.cjs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/RemoteLink.Desktop/electron/preload.cjs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Desktop/electron/preload.cjs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/RemoteLink.Desktop/src/components/IncomingPairingRequests.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Desktop/src/components/IncomingPairingRequests.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/RemoteLink.Desktop/src/pages/DevicesPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Desktop/src/pages/DevicesPage.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/RemoteLink.Desktop/src/types/electron.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Desktop/src/types/electron.d.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/RemoteLink.Host/Controllers/LocalPairingController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Host/Controllers/LocalPairingController.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RemoteLink.Host/Services/PairingClientService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Host/Services/PairingClientService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/RemoteLink.Host/Services/LanDiscoveryService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Host/Services/LanDiscoveryService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/RemoteLink.Host/Services/PairingSecurityService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Host/Services/PairingSecurityService.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -34,7 +36,7 @@
     <option name="firstShow" value="false" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="10" />
+    <option name="cachedIndexableFilesCount" value="46" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="Git.Settings">
@@ -47,6 +49,7 @@
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/DiscoveryAnnouncement.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/PairingConfirmation.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/PairingHandshakeResponse.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/PairingLocalVerification.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/PairingProposal.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/PairingProposalResponse.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/PairingRequest.cs" root0="FORCE_HIGHLIGHTING" />
@@ -81,60 +84,60 @@
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
       <entry key="MS100" value="1.0" />
-      <entry key="MS500" value="1.0" />
-      <entry key="S2" value="1.0" />
-      <entry key="S5" value="1.0" />
-      <entry key="S10" value="1.0" />
-      <entry key="S30" value="1.0" />
-      <entry key="S60" value="1.0000000000003169" />
-      <entry key="M2" value="1.000003982416805" />
-      <entry key="M5" value="1.1525026927030388" />
-      <entry key="M10" value="8.591009384554356" />
-      <entry key="M15" value="33.26842413399685" />
-      <entry key="M30" value="176.01546856413697" />
-      <entry key="H1" value="565.0142778735577" />
-      <entry key="H2" value="1280.0452570904802" />
-      <entry key="H4" value="2173.500136273109" />
-      <entry key="D1" value="3740.804092686671" />
-      <entry key="W1" value="4155.027478016692" />
+      <entry key="MS500" value="1.000003462243801" />
+      <entry key="S2" value="1.0820245533176749" />
+      <entry key="S5" value="1.9842492882946887" />
+      <entry key="S10" value="4.207752326170515" />
+      <entry key="S30" value="16.091961666031576" />
+      <entry key="S60" value="37.7869815179205" />
+      <entry key="M2" value="81.63113607705361" />
+      <entry key="M5" value="177.8915368448785" />
+      <entry key="M10" value="253.8153829880593" />
+      <entry key="M15" value="303.18393743027343" />
+      <entry key="M30" value="460.58142940598213" />
+      <entry key="H1" value="846.233199941322" />
+      <entry key="H2" value="1562.7477281065783" />
+      <entry key="H4" value="2472.066963699347" />
+      <entry key="D1" value="4087.974856161626" />
+      <entry key="W1" value="4518.0499623612" />
     </decayedCancelled>
     <decayedSelected>
-      <entry key="MS100" value="2.575237888611121E-18" />
-      <entry key="MS500" value="3.035033371347509E-4" />
-      <entry key="S2" value="0.1319899510099927" />
-      <entry key="S5" value="0.4448528190629778" />
-      <entry key="S10" value="0.6669728773068496" />
-      <entry key="S30" value="0.8737141940803933" />
-      <entry key="S60" value="0.9347268018417677" />
-      <entry key="M2" value="0.966814211341923" />
-      <entry key="M5" value="1.0294637604750259" />
-      <entry key="M10" value="2.940748614904216" />
-      <entry key="M15" value="9.074062715779124" />
-      <entry key="M30" value="44.02550874110873" />
-      <entry key="H1" value="132.96066792673872" />
-      <entry key="H2" value="289.33810033652844" />
-      <entry key="H4" value="483.42162161727003" />
-      <entry key="D1" value="820.8372867081019" />
-      <entry key="W1" value="909.0747263262518" />
+      <entry key="MS100" value="4.6113708741148345E-39" />
+      <entry key="MS500" value="2.1587767746199617E-8" />
+      <entry key="S2" value="0.01661119560755442" />
+      <entry key="S5" value="0.4229256264452071" />
+      <entry key="S10" value="1.630666867973513" />
+      <entry key="S30" value="7.183147836418728" />
+      <entry key="S60" value="15.940613359308422" />
+      <entry key="M2" value="29.751170058881932" />
+      <entry key="M5" value="49.09051170607218" />
+      <entry key="M10" value="60.695827160423484" />
+      <entry key="M15" value="69.11253095772788" />
+      <entry key="M30" value="102.96436545804666" />
+      <entry key="H1" value="188.98829742569174" />
+      <entry key="H2" value="344.9292003778247" />
+      <entry key="H4" value="542.1212885925678" />
+      <entry key="D1" value="889.8202905717925" />
+      <entry key="W1" value="981.4395997602612" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="8.264876940075837E-14" />
-      <entry key="MS500" value="0.0024746612537261455" />
-      <entry key="S2" value="0.3085286915382434" />
-      <entry key="S5" value="0.9236055531659059" />
-      <entry key="S10" value="1.3532138098237099" />
-      <entry key="S30" value="1.7540890693292492" />
-      <entry key="S60" value="1.8727842283547191" />
-      <entry key="M2" value="1.9352934529126986" />
-      <entry key="M5" value="2.1690471600359933" />
-      <entry key="M10" value="11.520859461384466" />
-      <entry key="M15" value="42.32507857755811" />
-      <entry key="M30" value="220.0020995511109" />
-      <entry key="H1" value="697.9150347361762" />
-      <entry key="H2" value="1569.3160455468699" />
-      <entry key="H4" value="2656.8642292976992" />
-      <entry key="D1" value="4561.6247131057935" />
-      <entry key="W1" value="5064.09955552529" />
+      <entry key="MS100" value="0.9265880618903709" />
+      <entry key="MS500" value="0.9848698725122083" />
+      <entry key="S2" value="1.0867887378527423" />
+      <entry key="S5" value="2.30609452855824" />
+      <entry key="S10" value="5.634638298399571" />
+      <entry key="S30" value="22.984417686804242" />
+      <entry key="S60" value="53.402549780741" />
+      <entry key="M2" value="111.05581678521666" />
+      <entry key="M5" value="226.73408368535257" />
+      <entry key="M10" value="314.34614687493024" />
+      <entry key="M15" value="372.1683622675304" />
+      <entry key="M30" value="563.450184375095" />
+      <entry key="H1" value="1035.1340180029056" />
+      <entry key="H2" value="1907.5958874693633" />
+      <entry key="H4" value="3014.123494442567" />
+      <entry key="D1" value="4977.7770680358" />
+      <entry key="W1" value="5499.4867016019025" />
     </decayedShown>
   </component>
   <component name="ProblemsViewState">
@@ -177,7 +180,7 @@
     &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;
   }
 }</component>
-  <component name="RunManager" selected=".NET Launch Settings Profile.RemoteLink.Host">
+  <component name="RunManager" selected="Publish to folder.Publish Host">
     <configuration name="Publish Host" type="DotNetFolderPublish" factoryName="Publish to folder">
       <riderPublish configuration="Release" platform="Any CPU" produce_single_file="true" self_contained="true" target_folder="$PROJECT_DIR$/Artifacts/Host" target_framework="net10.0" uuid_high="-7830479812831787127" uuid_low="-6643067045281006256">
         <runtimes>

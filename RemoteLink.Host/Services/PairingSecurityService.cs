@@ -169,6 +169,37 @@ namespace RemoteLink.Host.Services
             }
         }
 
+        public string CalculateSessionVerificationCode(Guid requestId, Guid initiatorDeviceId, Guid responderDeviceId, byte[] initiatorIdentityKey, byte[] responderIdentityKey, PairingCryptoSessionService cryptoSessions)
+        {
+            if (!cryptoSessions.TryCreateTranscript(requestId, initiatorDeviceId, responderDeviceId, initiatorIdentityKey, responderIdentityKey, this, out byte[] transcriptHash))
+            {
+                throw new InvalidOperationException("Unable to construct the pairing transcript.");
+            }
+            
+            if (!cryptoSessions.TryDeriveSharedSecret(requestId, out byte[]? sharedSecret) || sharedSecret is null)
+            {
+                throw new InvalidOperationException("Unable to derive the pairing shared secret.");
+            }
+
+            try
+            {
+                byte[] verificationKey = DeriveVerificationKey(sharedSecret, transcriptHash);
+
+                try
+                {
+                    return CreateVerificationCode(verificationKey, transcriptHash);
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(verificationKey);
+                }
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(sharedSecret);
+            }
+        }
+
         private static void WriteField(Stream stream, byte[] value)
         {
             Span<byte> length = stackalloc byte[4];

@@ -86,7 +86,7 @@ export default function DevicesPage() {
 
     return (
         <div>
-            <IncomingPairingRequests />
+            <IncomingPairingRequests/>
 
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
@@ -106,14 +106,14 @@ export default function DevicesPage() {
 
             {error && (
                 <div className="alert alert-danger" role="alert">
-                    <i className="bi bi-exclamation-triangle me-2" />
+                    <i className="bi bi-exclamation-triangle me-2"/>
                     {error}
                 </div>
             )}
 
             {pairingError && (
                 <div className="alert alert-danger" role="alert">
-                    <i className="bi bi-exclamation-triangle me-2" />
+                    <i className="bi bi-exclamation-triangle me-2"/>
                     {pairingError}
                 </div>
             )}
@@ -136,15 +136,20 @@ export default function DevicesPage() {
                         was verified.
                     </p>
 
-                    <div className="rounded bg-body-tertiary text-center p-4 mb-3">
+                    <div className="rounded-3 text-center p-4 mb-3" style={{ backgroundColor: "var(--bs-dark-bg-subtle, #151e2d)", border: "1px solid var(--bs-border-color)" }}>
                         <div className="small text-secondary mb-2">
-                            Verification Code
+                            <i className="bi bi-shield-lock me-2"/>
+                            Six-Digit Verification Code
                         </div>
 
-                        <div className="fw-bold font-monospace" style={{fontSize: "2rem", letterSpacing: "0.25rem"}}>
+                        <div className="fw-bold font-monospace" style={{ fontSize: "clamp(1.75rem, 4vw, 2.5rem)", letterSpacing: "0.2rem", color: "var(--bs-body-color)" }}>
                             {verification.verificationCode.slice(0, 3)}
                             {" "}
                             {verification.verificationCode.slice(3)}
+                        </div>
+
+                        <div className="small text-secondary mt-3">
+                            Compare this code on both computers.
                         </div>
                     </div>
 
@@ -171,7 +176,7 @@ export default function DevicesPage() {
                 </div>
             ) : devices.length === 0 ? (
                 <div className="content-card text-center py-5">
-                    <i className="bi bi-pc-display fs-1 text-secondary" />
+                    <i className="bi bi-pc-display fs-1 text-secondary"/>
 
                     <h5 className="mt-3">
                         No Devices Found
@@ -187,7 +192,7 @@ export default function DevicesPage() {
                         <div key={device.id} className="col-md-6">
                             <div className="content-card">
                                 <div className="d-flex align-items-center gap-3">
-                                    <i className="bi bi-pc-display fs-2 text-primary" />
+                                    <i className="bi bi-pc-display fs-2 text-primary"/>
 
                                     <div className="flex-grow-1">
                                         <h6 className="mb-1">
@@ -210,15 +215,17 @@ export default function DevicesPage() {
                                 </div>
 
                                 <div className="mt-3">
-                                    <button type="button" className="btn btn-primary btn-sm" disabled={!device.isOnline || pairingDeviceId !== null || verification !== null} onClick={() => { void handlePair(device) }}>
+                                    <button type="button" className="btn btn-primary btn-sm" disabled={!device.isOnline || pairingDeviceId !== null || verification !== null} onClick={() => {
+                                        void handlePair(device)
+                                    }}>
                                         {pairingDeviceId === device.id ? (
                                             <>
-                                                <span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />
+                                                <span className="spinner-border spinner-border-sm me-2" aria-hidden="true"/>
                                                 Pairing...
                                             </>
                                         ) : (
                                             <>
-                                                <i className="bi bi-link-45deg me-1" />
+                                                <i className="bi bi-link-45deg me-1"/>
                                                 Pair Device
                                             </>
                                         )}

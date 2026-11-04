@@ -11,12 +11,9 @@ namespace RemoteLink.Host.Services
     {
         private const int DiscoveryPort = 5018;
 
-        private static readonly TimeSpan AnnouncementInterval = TimeSpan.FromSeconds(5);
+        private static readonly TimeSpan AnnouncementInterval = TimeSpan.FromSeconds(3);
         
-        private static readonly TimeSpan DeviceTimeout = TimeSpan.FromSeconds(20);
-
-        private readonly DeviceIdentityService _identity = identity;
-        private readonly ILogger<LanDiscoveryService> _logger = logger;
+        private static readonly TimeSpan DeviceTimeout = TimeSpan.FromSeconds(45);
         
         private readonly ConcurrentDictionary<Guid, DiscoveredDevice> _devices = new();
 
@@ -47,7 +44,7 @@ namespace RemoteLink.Host.Services
             
             sender.EnableBroadcast = true;
             
-            _logger.LogInformation("LAN discovery listening on port {Port}", DiscoveryPort);
+            logger.LogInformation("LAN discovery listening on port {Port}", DiscoveryPort);
 
             Task receiveTask = ReceiveLoopAsync(receiver, stoppingToken);
             Task broadcastTask = BroadcastLoopAsync(sender, stoppingToken);
@@ -72,7 +69,7 @@ namespace RemoteLink.Host.Services
 
                     DiscoveryAnnouncement? announcement = JsonSerializer.Deserialize<DiscoveryAnnouncement>(json);
 
-                    if (announcement is null || announcement.Protocol != "RemoteLink.Discovery" || announcement.ProtocolVersion != 1 || announcement.DeviceId == Guid.Empty || announcement.DeviceId == _identity.DeviceId ||
+                    if (announcement is null || announcement.Protocol != "RemoteLink.Discovery" || announcement.ProtocolVersion != 1 || announcement.DeviceId == Guid.Empty || announcement.DeviceId == identity.DeviceId ||
                         announcement.DiscoveryPort != DiscoveryPort || string.IsNullOrWhiteSpace(announcement.DeviceName) || announcement.DeviceName.Length > 128)
                     {
                         continue;
@@ -108,7 +105,7 @@ namespace RemoteLink.Host.Services
                 }
                 catch (SocketException exception)
                 {
-                    _logger.LogWarning(exception, "LAN discovery receive error");
+                    logger.LogWarning(exception, "LAN discovery receive error");
                 }
             }
         }
@@ -117,8 +114,8 @@ namespace RemoteLink.Host.Services
         {
             DiscoveryAnnouncement announcement = new()
             {
-                DeviceId = _identity.DeviceId,
-                DeviceName = _identity.DeviceName,
+                DeviceId = identity.DeviceId,
+                DeviceName = identity.DeviceName,
                 DiscoveryPort = DiscoveryPort
             };
             
@@ -138,7 +135,7 @@ namespace RemoteLink.Host.Services
                 }
                 catch (SocketException exception)
                 {
-                    _logger.LogWarning(exception, "LAN discovery broadcast failed");
+                    logger.LogWarning(exception, "LAN discovery broadcast failed");
                 }
             }
             while (await timer.WaitForNextTickAsync(cancellationToken));
