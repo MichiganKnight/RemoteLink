@@ -9,30 +9,7 @@ export default function DevicesPage() {
     const [loading, setLoading] = useState(true);
     const [trusted, setTrusted] = useState<TrustedDevice[]>([]);
     const [decision, setDecision] = useState<PairingApprovalState | null>(null);
-    const [decisionBusy, setDecisionBusy] = useState(false);
     const [pairedMessage, setPairedMessage] = useState<string | null>(null);
-
-    async function chooseDecision(approved: boolean) {
-        if (!verification) {
-            return;
-        }
-
-        setDecisionBusy(true); setPairingError(null);
-
-        try {
-            const result = await window.remoteLink.decideOutgoingPairing(verification.requestId, approved);
-
-            setDecision(result);
-
-            if (!approved) {
-                setVerification(null);
-            }
-        } catch (e) {
-            setPairingError(e instanceof Error ? e.message : "Decision delivery failed. Try again.");
-        } finally {
-            setDecisionBusy(false);
-        }
-    }
 
     const [error, setError] = useState<string | null>(null);
 
@@ -168,6 +145,8 @@ export default function DevicesPage() {
         };
     }, [verification, decision?.localDecision]);
 
+    const unpairedDevices = devices.filter(device => !trusted.some(trustedDevice => trustedDevice.deviceId === device.id && trustedDevice.isTrusted));
+
     return (
         <div>
             <IncomingPairingRequests/>
@@ -184,7 +163,7 @@ export default function DevicesPage() {
                 </div>
 
                 <span className="badge text-bg-secondary">
-                    {devices.length} Devices
+                    {unpairedDevices.length} Devices
                 </span>
             </div>
 
@@ -201,7 +180,7 @@ export default function DevicesPage() {
                 </div>
             }
 
-            {trusted.length > 0 &&
+            {trusted.some(device => device.isTrusted) &&
                 <section className="mb-4">
                     <h5>Paired Devices</h5>
 
@@ -232,75 +211,11 @@ export default function DevicesPage() {
                 </div>
             )}
 
-            {verification && (
-                <div className="content-card mb-4">
-                    <div className="d-flex justify-content-between align-items-center mb-3">
-                        <h5 className="mb-0">
-                            Pairing Verification
-                        </h5>
-
-                        <span className="badge text-bg-warning">
-                            Awaiting Mutual Verification
-                        </span>
-                    </div>
-
-                    <p className="text-secondary">
-                        The signed handshake with{" "}
-                        <strong>{verification.remoteDeviceName}</strong>{" "}
-                        was verified.
-                    </p>
-
-                    <div className="rounded-3 text-center p-4 mb-3" style={{ backgroundColor: "var(--bs-dark-bg-subtle, #151e2d)", border: "1px solid var(--bs-border-color)" }}>
-                        <div className="small text-secondary mb-2">
-                            <i className="bi bi-shield-lock me-2"/>
-                            Six-Digit Verification Code
-                        </div>
-
-                        <div className="fw-bold font-monospace" style={{ fontSize: "clamp(1.75rem, 4vw, 2.5rem)", letterSpacing: "0.2rem", color: "var(--bs-body-color)" }}>
-                            {verification.verificationCode.slice(0, 3)}
-                            {" "}
-                            {verification.verificationCode.slice(3)}
-                        </div>
-
-                        <div className="small text-secondary mt-3">
-                            Compare this code on both computers.
-                        </div>
-                    </div>
-
-                    <div className="small text-secondary mb-3">
-                        Remote identity fingerprint:
-                        <div className="font-monospace text-break mt-1">
-                            {verification.remoteIdentityFingerprint}
-                        </div>
-                    </div>
-
-                    <div className="alert alert-info mb-3">
-                        The remote device has not yet completed mutual verification. Do not treat this device as trusted.
-                    </div>
-
-                    <div className="d-flex gap-2">
-                        <button type="button" className="btn btn-primary" disabled={decisionBusy || (decision?.localDecision ?? 0) !== 0} onClick={() => void chooseDecision(true)}>
-                            Confirm Match
-                        </button>
-
-                        <button type="button" className="btn btn-outline-danger" disabled={decisionBusy || (decision?.localDecision ?? 0) !== 0} onClick={() => void chooseDecision(false)}>
-                            Reject
-                        </button>
-                    </div>
-
-                    {decision?.localDecision === 1 &&
-                        <div className="text-secondary mt-3">
-                            Approved locally. Waiting for the other computer...
-                        </div>
-                    }
-                </div>
-            )}
-
             {loading ? (
                 <div className="content-card">
                     Searching for devices...
                 </div>
-            ) : devices.length === 0 ? (
+            ) : unpairedDevices.length === 0 ? (
                 <div className="content-card text-center py-5">
                     <i className="bi bi-pc-display fs-1 text-secondary"/>
 
@@ -314,7 +229,7 @@ export default function DevicesPage() {
                 </div>
             ) : (
                 <div className="row g-3">
-                    {devices.map(device => (
+                    {unpairedDevices.map(device => (
                         <div key={device.id} className="col-md-6">
                             <div className="content-card">
                                 <div className="d-flex align-items-center gap-3">

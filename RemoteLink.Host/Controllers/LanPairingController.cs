@@ -351,6 +351,8 @@ namespace RemoteLink.Host.Controllers
                     LastConnectedUtc = DateTime.UtcNow,
                     IsTrusted = true
                 });
+                
+                sessions.TryUpdateStatus(requestId, PairingStatus.AwaitingConfirmation, PairingStatus.Paired);
 
                 SignedPairingDecision receipt = decisionSecurity.CreateDecision(requestId, localIdentity.DeviceId, true, transcriptHash, deviceSecurity);
                 

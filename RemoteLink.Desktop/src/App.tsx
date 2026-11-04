@@ -75,11 +75,17 @@ function App() {
                     ))}
                 </nav>
 
-                <div className="sidebar-footer">
-                    <i className={"bi bi-circle-fill" + (hostStatus?.connected ? "text-success" : "text-danger")}/>
+                <div className="sidebar-footer d-flex align-items-center justify-content-between gap-2">
+                    <div className="d-flex align-items-center gap-2">
+                        <i className="bi bi-hdd-network"/>
 
-                    <span>
-                        {loading ? "Checking Host..." : hostStatus?.connected ? "Host Connected" : "Host Offline"}
+                        <span>Backend Host</span>
+                    </div>
+
+                    <span className={`badge rounded-pill ${loading ? "text-bg-secondary" : hostStatus?.connected ? "text-bg-success" : "text-bg-danger"}`}>
+                        <i className={`bi ${loading ? "bi-arrow-repeat" : hostStatus?.connected ? "bi-check-circle-fill" : "bi-x-circle-fill"} me-1`}/>
+
+                        {loading ? "Checking" : hostStatus?.connected ? "Online" : "Offline"}
                     </span>
                 </div>
             </aside>
