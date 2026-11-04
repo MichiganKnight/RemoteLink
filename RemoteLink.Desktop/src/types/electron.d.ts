@@ -67,6 +67,25 @@ export interface PairingLocalVerification {
     expiresUtc: string;
 }
 
+export interface PairingApprovalState {
+    requestId: string;
+    remoteDeviceId: string;
+    localDecision: number;
+    remoteDecision: number;
+    bothApproved: boolean;
+    rejected: boolean;
+    expiresUtc: string;
+}
+export interface TrustedDevice {
+    deviceId: string;
+    deviceName: string;
+    publicKey: string;
+    fingerprint: string;
+    pairedUtc: string;
+    lastConnectedUtc: string;
+    isTrusted: boolean;
+}
+
 declare global {
     interface Window {
         remoteLink: {
@@ -74,6 +93,12 @@ declare global {
             electronVersion: string;
             appName: string;
 
+            getTrustedDevices: () => Promise<TrustedDevice[]>;
+            decideIncomingPairing: (requestId: string, approved: boolean) => Promise<PairingApprovalState>;
+            decideOutgoingPairing: (requestId: string, approved: boolean) => Promise<PairingApprovalState>;
+            getIncomingDecision: (requestId: string) => Promise<PairingApprovalState>;
+            getOutgoingDecision: (requestId: string) => Promise<PairingApprovalState>;
+            finalizePairing: (requestId: string) => Promise<TrustedDevice>;
             getHostStatus: () => Promise<HostStatus>;
             getDevices: () => Promise<DiscoveredDevice[]>;
             getIncomingPairingRequests: () => Promise<IncomingPairingRequest[]>;
