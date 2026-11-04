@@ -5,6 +5,12 @@ contextBridge.exposeInMainWorld("remoteLink", {
     electronVersion: process.versions.electron,
     appName: "RemoteLink",
 
+    getTrustedDevices: () => ipcRenderer.invoke("pairing:trusted"),
+    decideIncomingPairing: (requestId, approved) => ipcRenderer.invoke("pairing:incoming-decision", requestId, approved),
+    decideOutgoingPairing: (requestId, approved) => ipcRenderer.invoke("pairing:outgoing-decision", requestId, approved),
+    getIncomingDecision: (requestId) => ipcRenderer.invoke("pairing:incoming-status", requestId),
+    getOutgoingDecision: (requestId) => ipcRenderer.invoke("pairing:outgoing-status", requestId),
+    finalizePairing: (requestId) => ipcRenderer.invoke("pairing:finalize", requestId),
     getHostStatus: () => ipcRenderer.invoke("host:get-status"),
     getDevices: () => ipcRenderer.invoke("devices:get-all"),
     getIncomingPairingRequests: () => ipcRenderer.invoke("pairing:get-incoming"),
