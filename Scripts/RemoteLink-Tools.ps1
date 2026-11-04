@@ -28,7 +28,9 @@ while ($true) {
     Write-Host "  3. View Local Device Information"
     Write-Host "  4. Test Remote Host Connection"
     Write-Host ""
-    Write-Host "  5. Build Windows Installer"
+    Write-Host "  5. Verify Signed Pairing Handshake"
+    Write-Host ""
+    Write-Host "  6. Build Windows Installer"
     Write-Host ""
     Write-Host "  0. Exit"
     Write-Host ""
@@ -43,17 +45,11 @@ while ($true) {
             "4" { Invoke-TestingScript "Test-HostConnection.ps1"}
 
             "5" {
-                $buildScript = Join-Path $PSScriptRoot "Build-Windows.ps1"
+                Invoke-TestingScript "Verify-PairingHandshake.ps1"
+            }
 
-                if (-not (Test-Path $buildScript)) {
-                    throw "Build script not found: $buildScript"
-                }
-
-                & $buildScript
-
-                if (-not $?) {
-                    throw "Windows build script failed."
-                }
+            "6" {
+                & (Join-Path $PSScriptRoot "Build-Windows.ps1")
             }
 
             "0" { return }
