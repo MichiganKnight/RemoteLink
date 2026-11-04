@@ -9,7 +9,7 @@ namespace RemoteLink.Host.Controllers
 {
     [ApiController]
     [Route("api/local/pairing")]
-    public class LocalPairingController(PairingClientService client, PairingSessionService sessions, ILogger<LocalPairingController> logger) : ControllerBase
+    public class LocalPairingController(PairingClientService client, PairingSessionService sessions) : ControllerBase
     {
         [HttpPost("start")]
         public async Task<IActionResult> Start([FromBody] StartPairingRequest request, CancellationToken cancellationToken)
@@ -77,15 +77,7 @@ namespace RemoteLink.Host.Controllers
             }
             catch (HttpRequestException exception)
             {
-                logger.LogError(exception, "Pairing handshake HTTP request failed for device {DeviceId}", request.DeviceId);
-
-                return StatusCode(502, new
-                {
-                    Error = "Remote pairing handshake request failed.",
-                    Message = exception.Message,
-                    InnerException = exception.InnerException?.Message,
-                    StatusCode = exception.StatusCode.HasValue ? (int)exception.StatusCode.Value : (int?)null
-                });
+                return StatusCode(502, exception.Message);
             }
             catch (CryptographicException exception)
             {
