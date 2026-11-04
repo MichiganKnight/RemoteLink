@@ -113,5 +113,149 @@ namespace RemoteLink.Host.Services
                 throw;
             }
         }
+
+        public async Task<PairingHandshakeVerification> VerifyHandshakeAsync(Guid requestId, Guid expectedRemoteDeviceId, string remoteAddress, string expectedTlsThumbprint, CancellationToken cancellationToken)
+        {
+            if (requestId == Guid.Empty || expectedRemoteDeviceId == Guid.Empty || expectedRemoteDeviceId == identity.DeviceId)
+            {
+                throw new ArgumentException("Invalid pairing identifiers.");
+            }
+
+            if (!IPAddress.TryParse(remoteAddress, out IPAddress? address) || IPAddress.IsLoopback(address) || address.IsIPv6LinkLocal || address.Equals(IPAddress.Any) || address.Equals(IPAddress.IPv6Any))
+            {
+                throw new ArgumentException("Invalid remote IP address.");
+            }
+
+            PairingCryptoSessionInfo? session = cryptoSessions.GetSession(requestId);
+
+            if (session is null || session.Role != PairingCryptoRole.Initiator || session.RemoteDeviceId != expectedRemoteDeviceId || session.RemoteEphemeralPublicKey is not null)
+            {
+                throw new InvalidOperationException("No eligible initiator pairing session exists.");
+            }
+
+            string thumbprint = expectedTlsThumbprint.Replace(" ", "").Replace(":", "").ToUpperInvariant();
+
+            if (thumbprint.Length != 40 || !thumbprint.All(Uri.IsHexDigit))
+            {
+                throw new ArgumentException("Invalid TLS certificate thumbprint.");
+            }
+
+            byte[] expectedCertificateHash = Convert.FromHexString(thumbprint);
+
+            using HttpClientHandler handler = new();
+
+            handler.ServerCertificateCustomValidationCallback = (_, certificate, _, _) =>
+            {
+                if (certificate is null)
+                {
+                    return false;
+                }
+
+                return CryptographicOperations.FixedTimeEquals(certificate.GetCertHash(), expectedCertificateHash);
+            };
+
+            using HttpClient client = new(handler)
+            {
+                Timeout = TimeSpan.FromSeconds(10)
+            };
+
+            string host = address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6 ? $"[{address}]" : address.ToString();
+
+            Uri endpoint = new($"https://{host}:5019/api/lan/pairing/handshake/{requestId:D}");
+
+            using HttpResponseMessage response = await client.PostAsync(endpoint, content: null, cancellationToken);
+
+            response.EnsureSuccessStatusCode();
+
+            PairingHandshakeResponse? handshake = await response.Content.ReadFromJsonAsync<PairingHandshakeResponse>(cancellationToken: cancellationToken);
+
+            if (handshake is null || handshake.SignedMessage is null || handshake.RequestId != requestId || handshake.ResponderDeviceId != expectedRemoteDeviceId || handshake.SignedMessage.RequestId != requestId ||
+                handshake.SignedMessage.DeviceId != expectedRemoteDeviceId)
+            {
+                throw new CryptographicException("The responder returned inconsistent handshake identifiers.");
+            }
+
+            SignedPairingMessage signed = handshake.SignedMessage;
+
+            byte[] responderIdentityKey;
+            byte[] responderEphemeralKey;
+            byte[] receivedTranscriptHash;
+
+            try
+            {
+                responderIdentityKey = Convert.FromBase64String(signed.PublicKey);
+
+                responderEphemeralKey = Convert.FromBase64String(signed.EphemeralPublicKey);
+
+                receivedTranscriptHash = Convert.FromBase64String(signed.TranscriptHash);
+            }
+            catch (FormatException exception)
+            {
+                throw new CryptographicException("The handshake contains invalid key encoding.", exception);
+            }
+
+            if (!pairingSecurity.IsValidIdentityPublicKey(signed.PublicKey) || !pairingSecurity.IsValidEphemeralPublicKey(signed.EphemeralPublicKey))
+            {
+                throw new CryptographicException("The responder supplied an invalid public key.");
+            }
+
+            DeviceSecurityIdentity localIdentity = security.GetPublicIdentity();
+
+            byte[] initiatorIdentityKey = Convert.FromBase64String(localIdentity.PublicKey);
+
+            byte[] transcript = pairingSecurity.CreateTranscript(requestId, identity.DeviceId, expectedRemoteDeviceId, initiatorIdentityKey, responderIdentityKey, session.LocalEphemeralPublicKey, responderEphemeralKey);
+
+            byte[] expectedTranscriptHash = pairingSecurity.CreateTranscriptHash(transcript);
+
+            if (!pairingSecurity.VerifySignedMessage(signed, responderIdentityKey, responderEphemeralKey, expectedTranscriptHash, requestId, expectedRemoteDeviceId))
+            {
+                throw new CryptographicException("The responder's signed handshake could not be verified.");
+            }
+
+            if (!CryptographicOperations.FixedTimeEquals(receivedTranscriptHash, expectedTranscriptHash))
+            {
+                throw new CryptographicException("Pairing transcript verification failed.");
+            }
+
+            if (!cryptoSessions.TrySetRemoteEphemeralPublicKey(requestId, responderEphemeralKey))
+            {
+                throw new InvalidOperationException("The pairing session was already updated or expired.");
+            }
+
+            if (!cryptoSessions.TryDeriveSharedSecret(requestId, out byte[] sharedSecret))
+            {
+                throw new CryptographicException("Unable to derive the pairing shared secret.");
+            }
+
+            string verificationCode;
+
+            try
+            {
+                byte[] verificationKey = pairingSecurity.DeriveVerificationKey(sharedSecret, expectedTranscriptHash);
+
+                try
+                {
+                    verificationCode = pairingSecurity.CreateVerificationCode(verificationKey, expectedTranscriptHash);
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(verificationKey);
+                }
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(sharedSecret);
+            }
+
+            return new PairingHandshakeVerification
+            {
+                RequestId = requestId,
+                RemoteDeviceId = expectedRemoteDeviceId,
+                RemoteDeviceName = handshake.ResponderDeviceName,
+                RemoteIdentityFingerprint = Convert.ToHexString(SHA256.HashData(responderIdentityKey)),
+                VerificationCode = verificationCode,
+                SignatureVerified = true
+            };
+        }
     }
 }
