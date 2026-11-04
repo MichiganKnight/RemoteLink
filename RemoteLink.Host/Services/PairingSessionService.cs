@@ -5,7 +5,7 @@ namespace RemoteLink.Host.Services
 {
     public sealed class PairingSessionService
     {
-        private static readonly TimeSpan RequestLifetime = TimeSpan.FromMinutes(2);
+        private static readonly TimeSpan RequestLifetime = TimeSpan.FromMinutes(10);
         
         private readonly ConcurrentDictionary<Guid, PairingRequest> _requests = new();
         
