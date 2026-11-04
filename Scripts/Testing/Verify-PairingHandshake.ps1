@@ -38,12 +38,44 @@ $body = @{
 Write-Host ""
 Write-Host "Verifying signed handshake..." -ForegroundColor Yellow
 
-$result = Invoke-RestMethod `
-    -Uri "$baseUrl/api/local/pairing/verify" `
-    -Method Post `
-    -ContentType "application/json" `
-    -Body $body `
-    -TimeoutSec 15
+try {
+    $result = Invoke-RestMethod `
+        -Uri "$baseUrl/api/local/pairing/verify" `
+        -Method Post `
+        -ContentType "application/json" `
+        -Body $body `
+        -TimeoutSec 15
+}
+catch {
+    Write-Host ""
+    Write-Host "=== Verification Failed ===" -ForegroundColor Red
+    Write-Host "Exception: $($_.Exception.Message)"
+
+    $response = $_.Exception.Response
+
+    if ($response) {
+        Write-Host "HTTP Status: $([int]$response.StatusCode)"
+
+        if ($response.Content) {
+            $errorBody = $response.Content.ReadAsStringAsync().
+                GetAwaiter().GetResult()
+
+            if ($errorBody) {
+                Write-Host ""
+                Write-Host "Host Response:" -ForegroundColor Yellow
+                Write-Host $errorBody
+            }
+        }
+    }
+
+    if ($_.ErrorDetails.Message) {
+        Write-Host ""
+        Write-Host "Error Details:"
+        Write-Host $_.ErrorDetails.Message
+    }
+
+    return
+}
 
 Write-Host ""
 Write-Host "=== Handshake Verification Result ===" -ForegroundColor Green
