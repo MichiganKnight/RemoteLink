@@ -42,6 +42,9 @@ namespace RemoteLink.Host
             builder.Services.AddScoped<ChatService>();
             builder.Services.AddScoped<ChatDeliveryService>();
 
+            builder.Services.AddSingleton<ChatPeerAddressResolver>();
+            builder.Services.AddHostedService<ChatDeliveryWorker>();
+
             builder.Services.AddHostedService(provider => provider.GetRequiredService<LanDiscoveryService>());
             
             builder.WebHost.ConfigureKestrel(options =>

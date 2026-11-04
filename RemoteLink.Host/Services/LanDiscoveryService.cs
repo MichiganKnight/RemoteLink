@@ -7,7 +7,7 @@ using RemoteLink.Core.Models;
 
 namespace RemoteLink.Host.Services
 {
-    public sealed class LanDiscoveryService(DeviceIdentityService identity, ILogger<LanDiscoveryService> logger) : BackgroundService
+    public sealed class LanDiscoveryService(DeviceIdentityService identity, ChatPeerAddressResolver addressResolver, ILogger<LanDiscoveryService> logger) : BackgroundService
     {
         private const int DiscoveryPort = 5018;
 
@@ -94,6 +94,8 @@ namespace RemoteLink.Host.Services
                         LastSeenUtc = now,
                         IsOnline = true
                     });
+                    
+                    addressResolver.Update(announcement.DeviceId, result.RemoteEndPoint.Address.ToString());
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
@@ -144,12 +146,15 @@ namespace RemoteLink.Host.Services
         private void RemoveExpiredDevices()
         {
             DateTime cutoff = DateTime.UtcNow - DeviceTimeout;
-            
+
             foreach (KeyValuePair<Guid, DiscoveredDevice> entry in _devices)
             {
                 if (entry.Value.LastSeenUtc < cutoff)
                 {
-                    _devices.TryRemove(entry.Key, out _);
+                    if (_devices.TryRemove(new KeyValuePair<Guid, DiscoveredDevice>(entry.Key, entry.Value)))
+                    {
+                        addressResolver.Remove(entry.Key);
+                    }
                 }
             }
         }
