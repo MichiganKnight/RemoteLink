@@ -95,6 +95,8 @@ namespace RemoteLink.Host
                     allowed |= context.Request.Method == HttpMethods.Post && context.Request.Path.Equals("/api/lan/auth/complete", StringComparison.OrdinalIgnoreCase);
                     
                     allowed |= context.Request.Method == HttpMethods.Post && context.Request.Path.Equals("/api/lan/chat/messages", StringComparison.OrdinalIgnoreCase);
+                    
+                    allowed |= context.Request.Method == HttpMethods.Post && context.Request.Path.Equals("/api/lan/transfers/offers", StringComparison.OrdinalIgnoreCase);
 
                     if (!allowed)
                     {
