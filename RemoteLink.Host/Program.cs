@@ -18,6 +18,7 @@ namespace RemoteLink.Host
             builder.Services.AddSingleton<PairingSessionService>();
             builder.Services.AddSingleton<PairingSecurityService>();
             builder.Services.AddSingleton<PairingClientService>();
+            builder.Services.AddSingleton<PairingCryptoSessionService>();
 
             builder.Services.AddHostedService(provider => provider.GetRequiredService<LanDiscoveryService>());
             

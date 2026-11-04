@@ -17,7 +17,9 @@
     <configurations />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3f37435d-db63-4300-bdfc-ac9e4eb902dc" name="Changes" comment="" />
+    <list default="true" id="3f37435d-db63-4300-bdfc-ac9e4eb902dc" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/RemoteLink.Host/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Host/Program.cs" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -27,7 +29,7 @@
     <option name="firstShow" value="false" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="9" />
+    <option name="cachedIndexableFilesCount" value="10" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="Git.Settings">
@@ -58,6 +60,7 @@
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/DeviceSecurityService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/LanDiscoveryService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/PairingClientService.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/PairingCryptoSessionService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/PairingSecurityService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/PairingSessionService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/TlsCertificateService.cs" root0="FORCE_HIGHLIGHTING" />
@@ -70,61 +73,61 @@
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.0000000000469527" />
-      <entry key="MS500" value="1.009576230871601" />
-      <entry key="S2" value="2.8584532511945318" />
-      <entry key="S5" value="10.299723061166794" />
-      <entry key="S10" value="18.873959034953803" />
-      <entry key="S30" value="30.497970058343423" />
-      <entry key="S60" value="34.83570723956456" />
-      <entry key="M2" value="38.46411540050539" />
-      <entry key="M5" value="67.00211835152" />
-      <entry key="M10" value="137.39163041870904" />
-      <entry key="M15" value="203.55401569582816" />
-      <entry key="M30" value="412.40691119991817" />
-      <entry key="H1" value="851.9166260408786" />
-      <entry key="H2" value="1518.296383373756" />
-      <entry key="H4" value="2257.342152163805" />
-      <entry key="D1" value="3443.0682463638645" />
-      <entry key="W1" value="3741.506962940842" />
+      <entry key="MS100" value="1.7413569200623242E-124" />
+      <entry key="MS500" value="2.195471472476426E-25" />
+      <entry key="S2" value="1.3451970512182004E-6" />
+      <entry key="S5" value="0.011661893838839227" />
+      <entry key="S10" value="0.35145688855804386" />
+      <entry key="S30" value="8.509580904210116" />
+      <entry key="S60" value="28.934491607880517" />
+      <entry key="M2" value="67.56667419612785" />
+      <entry key="M5" value="142.89479288064405" />
+      <entry key="M10" value="231.97808991133772" />
+      <entry key="M15" value="306.88871071360717" />
+      <entry key="M30" value="523.7913558051016" />
+      <entry key="H1" value="965.7807884678244" />
+      <entry key="H2" value="1642.6014594582527" />
+      <entry key="H4" value="2399.9851506497935" />
+      <entry key="D1" value="3624.0771364455263" />
+      <entry key="W1" value="3933.491395995756" />
     </decayedCancelled>
     <decayedSelected>
-      <entry key="MS100" value="5.961542619005554E-60" />
-      <entry key="MS500" value="1.4291302041793792E-12" />
-      <entry key="S2" value="0.0011150711408151018" />
-      <entry key="S5" value="0.0790219300210091" />
-      <entry key="S10" value="0.3724720003095179" />
-      <entry key="S30" value="1.1234859542711442" />
-      <entry key="S60" value="1.5013433286266407" />
-      <entry key="M2" value="2.170182036061928" />
-      <entry key="M5" value="12.111917187529537" />
-      <entry key="M10" value="36.754634042038106" />
-      <entry key="M15" value="58.45241655336931" />
-      <entry key="M30" value="113.23591215466065" />
-      <entry key="H1" value="207.42273880757202" />
-      <entry key="H2" value="347.6927833784978" />
-      <entry key="H4" value="505.8970392659408" />
-      <entry key="D1" value="758.8014592372272" />
-      <entry key="W1" value="821.7519078534659" />
+      <entry key="MS100" value="1.0000000000026448" />
+      <entry key="MS500" value="1.004900485454999" />
+      <entry key="S2" value="1.4452555753325682" />
+      <entry key="S5" value="2.5536700206019294" />
+      <entry key="S10" value="3.4841708712864388" />
+      <entry key="S30" value="5.245079041895181" />
+      <entry key="S60" value="7.2514272414759136" />
+      <entry key="M2" value="10.352949288503282" />
+      <entry key="M5" value="19.566764004567805" />
+      <entry key="M10" value="40.44985186584256" />
+      <entry key="M15" value="61.36509674258046" />
+      <entry key="M30" value="116.92828240125098" />
+      <entry key="H1" value="212.8702314613315" />
+      <entry key="H2" value="356.1565060900977" />
+      <entry key="H4" value="518.5900574720093" />
+      <entry key="D1" value="779.9710152372804" />
+      <entry key="W1" value="845.3138492760169" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="2.3820206058161374E-10" />
-      <entry key="MS500" value="0.01925725225794849" />
-      <entry key="S2" value="2.151252098347254" />
-      <entry key="S5" value="9.893475869547377" />
-      <entry key="S10" value="18.857000882386956" />
-      <entry key="S30" value="31.39159197928788" />
-      <entry key="S60" value="36.19816685275535" />
-      <entry key="M2" value="40.551614870399405" />
-      <entry key="M5" value="79.03230480496491" />
-      <entry key="M10" value="174.04915841388168" />
-      <entry key="M15" value="261.9086426135653" />
-      <entry key="M30" value="525.5481357440049" />
-      <entry key="H1" value="1059.2475860125285" />
-      <entry key="H2" value="1865.9085833028053" />
-      <entry key="H4" value="2763.178957909535" />
-      <entry key="D1" value="4201.85426280069" />
-      <entry key="W1" value="4563.256470395268" />
+      <entry key="MS100" value="1.0712394149224391E-10" />
+      <entry key="MS500" value="0.010259756278133268" />
+      <entry key="S2" value="0.5703716709411022" />
+      <entry key="S5" value="1.9460539703992052" />
+      <entry key="S10" value="3.426400451722576" />
+      <entry key="S30" value="13.489316006545115" />
+      <entry key="S60" value="35.94294635155396" />
+      <entry key="M2" value="77.70262611735716" />
+      <entry key="M5" value="162.29070927771895" />
+      <entry key="M10" value="272.2817935570065" />
+      <entry key="M15" value="368.120849810804" />
+      <entry key="M30" value="640.6053567585727" />
+      <entry key="H1" value="1178.5487728197804" />
+      <entry key="H2" value="1998.671550164464" />
+      <entry key="H4" value="2918.5115824389804" />
+      <entry key="D1" value="4404.031973867663" />
+      <entry key="W1" value="4778.802732853244" />
     </decayedShown>
   </component>
   <component name="ProblemsViewState">
@@ -163,6 +166,7 @@
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;advanced.settings&quot;,
     &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;
   }
 }</component>
@@ -298,5 +302,9 @@
         </breakpoint>
       </breakpoints>
     </breakpoint-manager>
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
   </component>
 </project>

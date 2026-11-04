@@ -5,7 +5,7 @@ using RemoteLink.Core.Models.Pairing;
 
 namespace RemoteLink.Host.Services
 {
-    public sealed class PairingClientService(DeviceIdentityService identity, DeviceSecurityService security, PairingSecurityService pairingSecurity)
+    public sealed class PairingClientService(DeviceIdentityService identity, DeviceSecurityService security, PairingSecurityService pairingSecurity, PairingCryptoSessionService cryptoSessions)
     {
         public async Task<PairingProposalResponse> SendProposalAsync(StartPairingRequest request, CancellationToken cancellationToken)
         {
@@ -31,54 +31,87 @@ namespace RemoteLink.Host.Services
                 throw new ArgumentException("A valid SHA-1 certificate thumbprint is required.");
             }
 
-            using PairingKeyExchange exchange = pairingSecurity.CreateKeyExchange();
+            PairingKeyExchange exchange = pairingSecurity.CreateKeyExchange();
 
-            DeviceSecurityIdentity publicIdentity = security.GetPublicIdentity();
+            Guid requestId = Guid.NewGuid();
 
-            PairingProposal proposal = new()
+            bool sessionCreated;
+
+            byte[] ephemeralPublicKey;
+
+            try
             {
-                RequestId = Guid.NewGuid(),
-                DeviceId = identity.DeviceId,
-                DeviceName = identity.DeviceName,
-                IdentityPublicKey = publicIdentity.PublicKey,
-                EphemeralPublicKey = Convert.ToBase64String(exchange.ExportPublicKey())
-            };
-
-            using HttpClientHandler handler = new();
-
-            handler.ServerCertificateCustomValidationCallback = (_, certificate, _, _) =>
+                sessionCreated = cryptoSessions.TryCreateSession(requestId, request.DeviceId, PairingCryptoRole.Initiator, exchange, null, out ephemeralPublicKey);
+            }
+            catch
             {
-                if (certificate is null)
+                exchange.Dispose();
+
+                throw;
+            }
+
+            if (!sessionCreated)
+            {
+                exchange.Dispose();
+
+                throw new InvalidOperationException("Unable to create an initiator pairing session.");
+            }
+
+            try
+            {
+                DeviceSecurityIdentity publicIdentity = security.GetPublicIdentity();
+
+                PairingProposal proposal = new()
                 {
-                    return false;
+                    RequestId = requestId,
+                    DeviceId = identity.DeviceId,
+                    DeviceName = identity.DeviceName,
+                    IdentityPublicKey = publicIdentity.PublicKey,
+                    EphemeralPublicKey = Convert.ToBase64String(ephemeralPublicKey)
+                };
+
+                using HttpClientHandler handler = new();
+
+                byte[] expectedCertificateHash = Convert.FromHexString(expectedThumbprint);
+
+                handler.ServerCertificateCustomValidationCallback = (_, certificate, _, _) =>
+                {
+                    if (certificate is null)
+                    {
+                        return false;
+                    }
+
+                    byte[] actualCertificateHash = certificate.GetCertHash();
+
+                    return CryptographicOperations.FixedTimeEquals(actualCertificateHash, expectedCertificateHash);
+                };
+
+                using HttpClient client = new(handler)
+                {
+                    Timeout = TimeSpan.FromSeconds(10)
+                };
+
+                Uri endpoint = new($"https://{address}:5019/api/lan/pairing/propose");
+
+                using HttpResponseMessage response = await client.PostAsJsonAsync(endpoint, proposal, cancellationToken);
+
+                response.EnsureSuccessStatusCode();
+
+                PairingProposalResponse? result = await response.Content.ReadFromJsonAsync<PairingProposalResponse>(cancellationToken: cancellationToken);
+
+                if (result is null || result.RequestId != requestId || !result.AcceptedForReview)
+                {
+                    throw new InvalidOperationException("The remote Host returned an invalid pairing response.");
                 }
 
-                byte[] actual = certificate.GetCertHash();
-
-                byte[] expected = Convert.FromHexString(expectedThumbprint);
-
-                return CryptographicOperations.FixedTimeEquals(actual, expected);
-            };
-
-            using HttpClient client = new(handler)
-            {
-                Timeout = TimeSpan.FromSeconds(10)
-            };
-            
-            Uri endpoint = new($"https://{address}:5019/api/lan/pairing/propose");
-            
-            using HttpResponseMessage response = await client.PostAsJsonAsync(endpoint, proposal, cancellationToken);
-            
-            response.EnsureSuccessStatusCode();
-            
-            PairingProposalResponse? result = await response.Content.ReadFromJsonAsync<PairingProposalResponse>(cancellationToken);
-
-            if (result is null || result.RequestId != proposal.RequestId || !result.AcceptedForReview)
-            {
-                throw new InvalidOperationException("The remote Host returned an invalid response.");
+                return result;
             }
-            
-            return result;
+            catch
+            {
+                cryptoSessions.RemoveSession(requestId);
+
+                throw;
+            }
         }
     }
 }
