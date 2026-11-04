@@ -9,7 +9,7 @@ namespace RemoteLink.Host.Controllers
 {
     [ApiController]
     [Route("api/lan/pairing")]
-    public sealed class LanPairingController(PairingSessionService sessions, PairingSecurityService security, DeviceIdentityService localIdentity, PairingCryptoSessionService cryptoSessions, DeviceSecurityService deviceSecurity, PairingApprovalService approvals, PairingDecisionSecurityService decisionSecurity) : ControllerBase
+    public sealed class LanPairingController(PairingSessionService sessions, PairingSecurityService security, DeviceIdentityService localIdentity, PairingCryptoSessionService cryptoSessions, DeviceSecurityService deviceSecurity, PairingApprovalService approvals, PairingDecisionSecurityService decisionSecurity, TrustedDeviceService trustedDevices) : ControllerBase
     {
         private static readonly ConcurrentDictionary<string, DateTime> RecentRequests = new();
 
@@ -302,13 +302,6 @@ namespace RemoteLink.Host.Controllers
                     return Conflict("Unable to record the remote pairing decision.");
                 }
 
-                if (!decision.Approved)
-                {
-                    sessions.TryUpdateStatus(requestId, PairingStatus.AwaitingConfirmation, PairingStatus.Rejected);
-
-                    cryptoSessions.RemoveSession(requestId);
-                }
-
                 return Ok(updated);
             }
             catch (Exception exception)when (exception is FormatException or CryptographicException or ArgumentException)
@@ -316,7 +309,59 @@ namespace RemoteLink.Host.Controllers
                 return UnprocessableEntity("The pairing decision could not be verified.");
             }
         }
-        
+
+        [HttpPost("finalize/{requestId:guid}")]
+        [RequestSizeLimit(4096)]
+        public IActionResult FinalizePairing(Guid requestId, [FromBody] SignedPairingDecision initiatorApproval)
+        {
+            if (HttpContext.Connection.LocalPort != 5019)
+            {
+                return NotFound();
+            }
+
+            PairingRequest? request = sessions.GetRequest(requestId);
+            
+            PairingApprovalSnapshot? approval = approvals.GetState(requestId);
+            
+            PairingCryptoSessionInfo? session = cryptoSessions.GetSession(requestId);
+            
+            if (request is null || approval is null || session is null || request.ExpiresUtc <= DateTime.UtcNow || session.ExpiresUtc <= DateTime.UtcNow || session.Role != PairingCryptoRole.Responder || session.RemoteDeviceId != request.DeviceId || !approval.BothApproved || request.Status != PairingStatus.AwaitingConfirmation)
+            {
+                return Conflict("Both authenticated approvals are required before finalization.");
+            }
+
+            try
+            {
+                byte[] initiatorKey = Convert.FromBase64String(request.PublicKey);
+                
+                byte[] responderKey = Convert.FromBase64String(deviceSecurity.GetPublicIdentity().PublicKey);
+                
+                if (!cryptoSessions.TryCreateTranscript(requestId, request.DeviceId, localIdentity.DeviceId, initiatorKey, responderKey, security, out byte[] transcriptHash) || !initiatorApproval.Approved || !decisionSecurity.VerifyDecision(initiatorApproval, requestId, request.DeviceId, transcriptHash, initiatorKey))
+                {
+                    return UnprocessableEntity("Invalid signed finalization approval.");
+                }
+                
+                trustedDevices.SaveVerifiedDevice(new TrustedDevice
+                {
+                    DeviceId = request.DeviceId,
+                    DeviceName = request.DeviceName,
+                    PublicKey = request.PublicKey,
+                    Fingerprint = request.Fingerprint,
+                    PairedUtc = DateTime.UtcNow,
+                    LastConnectedUtc = DateTime.UtcNow,
+                    IsTrusted = true
+                });
+
+                SignedPairingDecision receipt = decisionSecurity.CreateDecision(requestId, localIdentity.DeviceId, true, transcriptHash, deviceSecurity);
+                
+                return Ok(receipt);
+            }
+            catch (Exception exception) when (exception is FormatException or CryptographicException or ArgumentException)
+            {
+                return UnprocessableEntity("Unable to finalize the verified pairing identity.");
+            }
+        }
+
         [HttpGet("decision/{requestId:guid}")]
         public IActionResult GetResponderDecision(Guid requestId)
         {
