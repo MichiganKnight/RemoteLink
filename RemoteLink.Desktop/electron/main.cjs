@@ -261,6 +261,87 @@ function registerIpcHandlers() {
 
         return await response.json();
     });
+
+    const chatGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    async function chatApi(endpoint, method = "GET", payload) {
+        const response = await fetch(`${HOST_URL}/api/local/chat/${endpoint}`, {
+            method,
+            signal: AbortSignal.timeout(15000),
+            headers: {
+                Accept: "application/json",
+                ...(payload !== undefined ? {
+                    "Content-Type": "application/json"
+                } : {})
+            },
+            ...(payload !== undefined ? {
+                body: JSON.stringify(payload)
+            } : {})
+        });
+
+        if (!response.ok) {
+            throw new Error(`Chat request failed (${response.status}): ${await response.text()}`);
+        }
+
+        return response.json();
+    }
+
+    ipcMain.handle("chat:get-conversations", () => {
+        return chatApi("conversations");
+    });
+
+    ipcMain.handle("chat:open-conversation", (_event, deviceId) => {
+        if (typeof deviceId !== "string" || !chatGuid.test(deviceId)) {
+            throw new Error("Invalid device ID.");
+        }
+
+        return chatApi(`conversations/${deviceId}`, "POST");
+    });
+
+    ipcMain.handle("chat:get-messages", (_event, deviceId, beforeUtc, beforeId, limit = 50) => {
+        if (typeof deviceId !== "string" || !chatGuid.test(deviceId)) {
+            throw new Error("Invalid device ID.");
+        }
+
+        if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+            throw new Error("Invalid message page size.");
+        }
+
+        const query = new URLSearchParams({
+            limit: String(limit)
+        });
+
+        if (beforeUtc !== null && beforeUtc !== undefined) {
+            if (typeof beforeUtc !== "string" || Number.isNaN(Date.parse(beforeUtc))) {
+                throw new Error("Invalid pagination timestamp.");
+            }
+
+            if (typeof beforeId !== "string" || !chatGuid.test(beforeId)) {
+                throw new Error("Invalid pagination message ID.");
+            }
+
+            query.set("beforeUtc", beforeUtc);
+            query.set("beforeId", beforeId);
+        } else if (beforeId !== null && beforeId !== undefined) {
+            throw new Error("Pagination requires both cursor fields.");
+        }
+
+        return chatApi(`conversations/${deviceId}/messages?${query.toString()}`);
+    });
+
+    ipcMain.handle("chat:send-message", (_event, deviceId, content) => {
+        if (typeof deviceId !== "string" || !chatGuid.test(deviceId)) {
+            throw new Error("Invalid device ID.");
+        }
+
+        if (typeof content !== "string" || !content.trim() || content.trim().length > 10000) {
+            throw new Error("Messages must contain between 1 and 10,000 characters.");
+        }
+
+        return chatApi(`conversations/${deviceId}/messages`, "POST", {
+            content
+        });
+    });
 }
 
 function createWindow() {

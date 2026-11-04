@@ -76,6 +76,7 @@ export interface PairingApprovalState {
     rejected: boolean;
     expiresUtc: string;
 }
+
 export interface TrustedDevice {
     deviceId: string;
     deviceName: string;
@@ -84,6 +85,34 @@ export interface TrustedDevice {
     pairedUtc: string;
     lastConnectedUtc: string;
     isTrusted: boolean;
+}
+
+export type ChatMessageStatus = 0 | 1 | 2 | 3 | 4;
+export type ChatMessageDirection = 0 | 1;
+
+export interface ChatConversation {
+    id: string;
+    remoteDeviceId: string;
+    remoteDeviceName: string;
+    createdUtc: string;
+    lastMessageUtc: string | null;
+    lastReadUtc: string | null;
+    lastMessagePreview: string | null;
+    unreadCount: number;
+}
+
+export interface ChatMessage {
+    id: string;
+    conversationId: string;
+    senderDeviceId: string;
+    recipientDeviceId: string;
+    content: string;
+    direction: ChatMessageDirection;
+    status: ChatMessageStatus;
+    createdUtc: string;
+    sentUtc: string | null;
+    deliveredUtc: string | null;
+    readUtc: string | null;
 }
 
 declare global {
@@ -107,6 +136,12 @@ declare global {
             verifyPairing: (request: VerifyPairingRequest) => Promise<PairingHandshakeVerification>;
             startDiscoveredPairing: (deviceId: string) => Promise<PairingHandshakeVerification>;
             getLocalPairingVerification: (requestId: string) => Promise<PairingLocalVerification>;
+
+
+            getChatConversations: () => Promise<ChatConversation[]>;
+            openChatConversation: (deviceId: string) => Promise<ChatConversation>;
+            getChatMessages: (deviceId: string, beforeUtc?: string | null, beforeId?: string | null, limit?: number) => Promise<ChatMessage[]>;
+            sendChatMessage: (deviceId: string, content: string) => Promise<ChatMessage>;
         }
     }
 }

@@ -18,5 +18,11 @@ contextBridge.exposeInMainWorld("remoteLink", {
     startPairing: (request) => ipcRenderer.invoke("pairing:start", request),
     verifyPairing: (request) => ipcRenderer.invoke("pairing:verify", request),
     startDiscoveredPairing: (deviceId) => ipcRenderer.invoke("pairing:start-discovered", deviceId),
-    getLocalPairingVerification: (requestId) => ipcRenderer.invoke("pairing:get-local-verification", requestId)
+    getLocalPairingVerification: (requestId) => ipcRenderer.invoke("pairing:get-local-verification", requestId),
+
+
+    getChatConversations: () => ipcRenderer.invoke("chat:get-conversations"),
+    openChatConversation: (deviceId) => ipcRenderer.invoke("chat:open-conversation", deviceId),
+    getChatMessages: (deviceId, beforeUtc = null, beforeId = null, limit = 50) => ipcRenderer.invoke("chat:get-messages", deviceId, beforeUtc, beforeId, limit),
+    sendChatMessage: (deviceId, content) => ipcRenderer.invoke("chat:send-message", deviceId, content)
 });

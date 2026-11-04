@@ -5,6 +5,9 @@ import { useHostStatus } from "./hooks/useHostStatus";
 import type { HostStatus } from "./types/electron";
 
 import DevicesPage from "./pages/DevicesPage";
+import ChatPage from "./pages/ChatPage";
+
+import "./styles/chat.css";
 
 type Page = "Dashboard" | "Devices" | "Transfers" | "Chat" | "Remote" | "Settings";
 
@@ -111,7 +114,9 @@ function App() {
                     {activePage === "Dashboard" ? (
                         <Dashboard hostStatus={hostStatus} loading={loading}/>
                     ) : activePage === "Devices" ? (
-                        <DevicesPage />
+                        <DevicesPage/>
+                    ) : activePage === "Chat" ? (
+                        <ChatPage/>
                     ) : (
                         <div className="content-card">
                             <h5>{currentPage?.label}</h5>

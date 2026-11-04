@@ -18,12 +18,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3f37435d-db63-4300-bdfc-ac9e4eb902dc" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/RemoteLink.Desktop/src/components/IncomingPairingRequests.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Desktop/src/components/IncomingPairingRequests.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/RemoteLink.Host/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Host/Program.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RemoteLink.Host/Services/LanDiscoveryService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Host/Services/LanDiscoveryService.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RemoteLink.Host/Services/PairingCryptoSessionService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Host/Services/PairingCryptoSessionService.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RemoteLink.Host/Services/PairingSessionService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Host/Services/PairingSessionService.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RemoteLink.Signaling/Controllers/WeatherForecastController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Signaling/Controllers/WeatherForecastController.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/RemoteLink.Host/RemoteLink.Host.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Host/RemoteLink.Host.csproj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/RemoteLink.Host/appsettings.Development.json" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Host/appsettings.Development.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -41,11 +38,20 @@
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Chat/ChatConversation.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Chat/ChatMessage.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Chat/ChatMessageDirection.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Chat/ChatMessageStatus.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Chat/Requests/SendChatMessageRequest.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Chat/Responses/ChatConversationResponse.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Chat/Responses/ChatMessageResponse.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/DeviceInfo.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/DeviceSecurityIdentity.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/DiscoveredDevice.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/DiscoveryAnnouncement.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/LocalPairingDecisionRequest.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/PairingConfirmation.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/PairingDecisionResponse.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/PairingHandshakeResponse.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/PairingInitiatorConfirmation.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/PairingLocalVerification.cs" root0="FORCE_HIGHLIGHTING" />
@@ -53,6 +59,7 @@
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/PairingProposalResponse.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/PairingRequest.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/PairingStatus.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/SendPairingDecisionRequest.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/SignedPairingDecision.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/SignedPairingMessage.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/StartPairingRequest.cs" root0="FORCE_HIGHLIGHTING" />
@@ -63,9 +70,12 @@
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Controllers/LanController.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Controllers/LanPairingController.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Controllers/LifecycleController.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Controllers/LocalChatController.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Controllers/LocalPairingController.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Controllers/LocalSecurityController.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Controllers/SystemController.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Data/RemoteLinkDbContext.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/ChatService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/DeviceIdentityService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/DeviceSecurityService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/LanDiscoveryService.cs" root0="FORCE_HIGHLIGHTING" />
@@ -73,9 +83,11 @@
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/PairingClientService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/PairingCryptoSessionService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/PairingDecisionSecurityService.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/PairingPeerContextService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/PairingSecurityService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/PairingSessionService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/TlsCertificateService.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/TrustedDeviceService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Tests/PairingSignedHandshakeTests.cs" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="McpProjectServerCommands">
@@ -85,65 +97,65 @@
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="0.0" />
-      <entry key="MS500" value="2.7196165648332915E-203" />
-      <entry key="S2" value="2.2836362182790044E-51" />
-      <entry key="S5" value="5.558634481035055E-21" />
-      <entry key="S10" value="1.0166629563662004E-10" />
-      <entry key="S30" value="0.004139877347484697" />
-      <entry key="S60" value="0.5156260033845668" />
-      <entry key="M2" value="8.855451028669446" />
-      <entry key="M5" value="78.47826215613871" />
-      <entry key="M10" value="197.2293880948871" />
-      <entry key="M15" value="291.5166048766718" />
-      <entry key="M30" value="512.5957070271259" />
-      <entry key="H1" value="916.4111106926285" />
-      <entry key="H2" value="1654.4157985419388" />
-      <entry key="H4" value="2637.0965094570265" />
-      <entry key="D1" value="4474.625750532914" />
-      <entry key="W1" value="4978.187246670976" />
+      <entry key="MS100" value="7.506340856699294E-82" />
+      <entry key="MS500" value="6.530175321354482E-17" />
+      <entry key="S2" value="3.2870700782729905E-4" />
+      <entry key="S5" value="0.2761112410763979" />
+      <entry key="S10" value="3.1074547508550743" />
+      <entry key="S30" value="22.767404729109025" />
+      <entry key="S60" value="54.87487374688437" />
+      <entry key="M2" value="111.86952700918525" />
+      <entry key="M5" value="234.6185516204561" />
+      <entry key="M10" value="383.8344373146804" />
+      <entry key="M15" value="490.9330966836087" />
+      <entry key="M30" value="698.0556646338321" />
+      <entry key="H1" value="1029.386373901466" />
+      <entry key="H2" value="1713.2779610919963" />
+      <entry key="H4" value="2802.3999501716926" />
+      <entry key="D1" value="5218.2338536640245" />
+      <entry key="W1" value="5944.969181178328" />
     </decayedCancelled>
     <decayedSelected>
-      <entry key="MS100" value="1.0" />
-      <entry key="MS500" value="1.0" />
-      <entry key="S2" value="1.0" />
-      <entry key="S5" value="1.0" />
-      <entry key="S10" value="1.0000000000000002" />
-      <entry key="S30" value="1.0000293864824978" />
-      <entry key="S60" value="1.0237587754975346" />
-      <entry key="M2" value="1.9469786390462105" />
-      <entry key="M5" value="15.336282738309487" />
-      <entry key="M10" value="44.87670127456732" />
-      <entry key="M15" value="69.49876192216368" />
-      <entry key="M30" value="125.24384902536401" />
-      <entry key="H1" value="220.32394604149005" />
-      <entry key="H2" value="384.98642976814824" />
-      <entry key="H4" value="600.5011544701456" />
-      <entry key="D1" value="998.4828038003791" />
-      <entry key="W1" value="1106.38148762572" />
+      <entry key="MS100" value="1.0000015600509853" />
+      <entry key="MS500" value="1.0783808301442759" />
+      <entry key="S2" value="2.0127606428998233" />
+      <entry key="S5" value="2.9244422800413417" />
+      <entry key="S10" value="3.6626864470676335" />
+      <entry key="S30" value="6.899525981730577" />
+      <entry key="S60" value="11.963910003777915" />
+      <entry key="M2" value="22.403694706206526" />
+      <entry key="M5" value="61.07087325274309" />
+      <entry key="M10" value="117.31059160130899" />
+      <entry key="M15" value="155.78297308730694" />
+      <entry key="M30" value="223.13749530169494" />
+      <entry key="H1" value="313.4902284913339" />
+      <entry key="H2" value="477.54854433219145" />
+      <entry key="H4" value="725.2441171546623" />
+      <entry key="D1" value="1259.3295037161888" />
+      <entry key="W1" value="1417.6733879330222" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="0.012958117903350655" />
-      <entry key="MS500" value="0.4192840922204656" />
-      <entry key="S2" value="0.8046872059547191" />
-      <entry key="S5" value="0.9167498309407588" />
-      <entry key="S10" value="0.9574705379950572" />
-      <entry key="S30" value="0.9897686305723631" />
-      <entry key="S60" value="1.5305779183481936" />
-      <entry key="M2" value="10.778859911232031" />
-      <entry key="M5" value="93.72400913743667" />
-      <entry key="M10" value="241.98339321512594" />
-      <entry key="M15" value="360.8916238834525" />
-      <entry key="M30" value="637.7294339359943" />
-      <entry key="H1" value="1136.6373444838673" />
-      <entry key="H2" value="2039.31471950727" />
-      <entry key="H4" value="3237.5277661218756" />
-      <entry key="D1" value="5473.088644834187" />
-      <entry key="W1" value="6084.565565561889" />
+      <entry key="MS100" value="6.914592388488811E-5" />
+      <entry key="MS500" value="0.1607163866127212" />
+      <entry key="S2" value="1.3001703248182033" />
+      <entry key="S5" value="2.7464865350149514" />
+      <entry key="S10" value="6.4610342054813605" />
+      <entry key="S30" value="29.413842103325617" />
+      <entry key="S60" value="66.57584364628859" />
+      <entry key="M2" value="134.0018643397607" />
+      <entry key="M5" value="295.4042228486" />
+      <entry key="M10" value="500.8788420394991" />
+      <entry key="M15" value="646.4803120587341" />
+      <entry key="M30" value="921.0215440473316" />
+      <entry key="H1" value="1342.7521969713873" />
+      <entry key="H2" value="2190.7272096543425" />
+      <entry key="H4" value="3527.5652310086525" />
+      <entry key="D1" value="6477.539371661501" />
+      <entry key="W1" value="7362.638675277345" />
     </decayedShown>
   </component>
   <component name="ProblemsViewState">
-    <option name="selectedTabId" value="Toolset" />
+    <option name="selectedTabId" value="SWEA" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 2,
@@ -182,7 +194,7 @@
     &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;
   }
 }</component>
-  <component name="RunManager" selected="Publish to folder.Publish Host">
+  <component name="RunManager" selected=".NET Launch Settings Profile.RemoteLink.Host">
     <configuration name="Publish Host" type="DotNetFolderPublish" factoryName="Publish to folder">
       <riderPublish configuration="Release" platform="Any CPU" produce_single_file="true" self_contained="true" target_folder="$PROJECT_DIR$/Artifacts/Host" target_framework="net10.0" uuid_high="-7830479812831787127" uuid_low="-6643067045281006256">
         <runtimes>

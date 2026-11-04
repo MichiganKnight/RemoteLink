@@ -1,4 +1,6 @@
 using System.Net;
+using Microsoft.EntityFrameworkCore;
+using RemoteLink.Host.Data;
 using RemoteLink.Host.Services;
 
 namespace RemoteLink.Host
@@ -10,6 +12,13 @@ namespace RemoteLink.Host
             WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
             builder.Services.AddControllers();
+
+            builder.Services.AddDbContext<RemoteLinkDbContext>(options =>
+            {
+                string connectionString = builder.Configuration.GetConnectionString("RemoteLink") ?? throw new InvalidOperationException("RemoteLink database connection string is missing.");
+                
+                options.UseSqlServer(connectionString);
+            });
             
             builder.Services.AddSingleton<DeviceIdentityService>();
             builder.Services.AddSingleton<DeviceSecurityService>();
@@ -23,6 +32,8 @@ namespace RemoteLink.Host
             builder.Services.AddSingleton<PairingDecisionSecurityService>();
             builder.Services.AddSingleton<PairingPeerContextService>();
             builder.Services.AddSingleton<TrustedDeviceService>();
+
+            builder.Services.AddScoped<ChatService>();
 
             builder.Services.AddHostedService(provider => provider.GetRequiredService<LanDiscoveryService>());
             
