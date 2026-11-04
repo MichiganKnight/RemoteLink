@@ -36,7 +36,7 @@ export default function IncomingPairingRequests() {
                         const next: Record<string, PairingLocalVerification> = {};
 
                         results.forEach((result, index) => {
-                            if (result.status === "fulfilled" && result.value.requestId === pending[index].requestId && new Date(result.value.expiresUtc).getTime() >  Date.now()) {
+                            if (result.status === "fulfilled" && result.value.requestId === pending[index].requestId && new Date(result.value.expiresUtc).getTime() > Date.now()) {
                                 next[pending[index].requestId] = result.value;
                             }
                         });
@@ -73,7 +73,6 @@ export default function IncomingPairingRequests() {
     }, []);
 
     const pendingRequests = requests.filter(request => (request.status === PAIRING_STATUS_PENDING || request.status === PAIRING_STATUS_AWAITING_CONFIRMATION) && new Date(request.expiresUtc).getTime() > Date.now());
-
     return (
         <section className="mb-5">
             <div className="d-flex justify-content-between align-items-center mb-4">
@@ -175,7 +174,7 @@ export default function IncomingPairingRequests() {
                                         {verifications[request.requestId] && (
                                             <div className="rounded p-3 mt-3 text-center" style={{ backgroundColor: "#151e2d", border: "1px solid #334155", color: "#f1f5f9" }}>
                                                 <div className="small mb-2" style={{ color: "#94a3b8" }}>
-                                                    <i className="bi bi-shield-lock me-2" />
+                                                    <i className="bi bi-shield-lock me-2"/>
                                                     Provisional Verification Code
                                                 </div>
 
