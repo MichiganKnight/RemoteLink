@@ -73,6 +73,7 @@ export default function IncomingPairingRequests() {
     }, []);
 
     const pendingRequests = requests.filter(request => (request.status === PAIRING_STATUS_PENDING || request.status === PAIRING_STATUS_AWAITING_CONFIRMATION) && new Date(request.expiresUtc).getTime() > Date.now());
+
     return (
         <section className="mb-5">
             <div className="d-flex justify-content-between align-items-center mb-4">

@@ -1,4 +1,3 @@
-
 using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +9,7 @@ namespace RemoteLink.Host.Controllers
 {
     [ApiController]
     [Route("api/lan/pairing")]
-    public sealed class LanPairingController(PairingSessionService sessions, PairingSecurityService security, DeviceIdentityService localIdentity, PairingCryptoSessionService cryptoSessions, DeviceSecurityService deviceSecurity) : ControllerBase
+    public sealed class LanPairingController(PairingSessionService sessions, PairingSecurityService security, DeviceIdentityService localIdentity, PairingCryptoSessionService cryptoSessions, DeviceSecurityService deviceSecurity, PairingApprovalService approvals, PairingDecisionSecurityService decisionSecurity) : ControllerBase
     {
         private static readonly ConcurrentDictionary<string, DateTime> RecentRequests = new();
 
@@ -204,6 +203,15 @@ namespace RemoteLink.Host.Controllers
                 {
                     return Conflict("The pairing request is no longer pending.");
                 }
+                
+                if (!approvals.TryCreate(requestId, request.DeviceId, request.ExpiresUtc))
+                {
+                    sessions.TryUpdateStatus(requestId, PairingStatus.AwaitingConfirmation, PairingStatus.Failed);
+
+                    cryptoSessions.RemoveSession(requestId);
+
+                    return Conflict("Unable to initialize pairing approval state.");
+                }
 
                 return Ok(new
                 {
@@ -219,6 +227,160 @@ namespace RemoteLink.Host.Controllers
                 cryptoSessions.RemoveSession(requestId);
                 
                 return UnprocessableEntity("The initiator confirmation could not be verified.");
+            }
+        }
+        
+        [HttpPost("decision/{requestId:guid}")]
+        [RequestSizeLimit(4096)]
+        public IActionResult ReceiveDecision(Guid requestId, [FromBody] SignedPairingDecision decision)
+        {
+            if (HttpContext.Connection.LocalPort != 5019)
+            {
+                return NotFound();
+            }
+
+            PairingRequest? request = sessions.GetRequest(requestId);
+
+            if (request is null || request.Status != PairingStatus.AwaitingConfirmation || request.ExpiresUtc <= DateTime.UtcNow)
+            {
+                return NotFound("No authenticated pairing request is awaiting confirmation.");
+            }
+
+            PairingCryptoSessionInfo? session = cryptoSessions.GetSession(requestId);
+
+            if (session is null || session.Role != PairingCryptoRole.Responder || session.RemoteDeviceId != request.DeviceId || session.ExpiresUtc <= DateTime.UtcNow)
+            {
+                return Conflict("The authenticated pairing session is unavailable.");
+            }
+
+            try
+            {
+                byte[] initiatorIdentityKey = Convert.FromBase64String(request.PublicKey);
+
+                byte[] responderIdentityKey = Convert.FromBase64String(deviceSecurity.GetPublicIdentity().PublicKey);
+
+                if (!cryptoSessions.TryCreateTranscript(requestId, request.DeviceId, localIdentity.DeviceId, initiatorIdentityKey, responderIdentityKey, security, out byte[] transcriptHash))
+                {
+                    return Conflict("Unable to reconstruct the pairing transcript.");
+                }
+
+                bool valid = decisionSecurity.VerifyDecision(decision, requestId, request.DeviceId, transcriptHash, initiatorIdentityKey);
+
+                if (!valid)
+                {
+                    return UnprocessableEntity("The pairing decision signature is invalid.");
+                }
+
+                PairingApprovalSnapshot? existing = approvals.GetState(requestId);
+
+                if (existing is null)
+                {
+                    return Conflict("Pairing approval state is unavailable.");
+                }
+                
+                if (existing.RemoteDecision != PairingDecisionState.Pending)
+                {
+                    bool sameDecision = decision.Approved ? existing.RemoteDecision == PairingDecisionState.Approved : existing.RemoteDecision == PairingDecisionState.Rejected;
+
+                    if (!sameDecision)
+                    {
+                        return Conflict("The remote pairing decision cannot be changed.");
+                    }
+
+                    return Ok(existing);
+                }
+
+                if (existing.Rejected)
+                {
+                    return Conflict("The pairing request has already been rejected.");
+                }
+
+                PairingApprovalSnapshot? updated = approvals.SetRemoteApproval(requestId, request.DeviceId, decision.Approved);
+
+                if (updated is null)
+                {
+                    return Conflict("Unable to record the remote pairing decision.");
+                }
+
+                if (!decision.Approved)
+                {
+                    sessions.TryUpdateStatus(requestId, PairingStatus.AwaitingConfirmation, PairingStatus.Rejected);
+
+                    cryptoSessions.RemoveSession(requestId);
+                }
+
+                return Ok(updated);
+            }
+            catch (Exception exception)when (exception is FormatException or CryptographicException or ArgumentException)
+            {
+                return UnprocessableEntity("The pairing decision could not be verified.");
+            }
+        }
+        
+        [HttpGet("decision/{requestId:guid}")]
+        public IActionResult GetResponderDecision(Guid requestId)
+        {
+            if (HttpContext.Connection.LocalPort != 5019)
+            {
+                return NotFound();
+            }
+
+            PairingRequest? request = sessions.GetRequest(requestId);
+
+            if (request is null || request.Status != PairingStatus.AwaitingConfirmation || request.ExpiresUtc <= DateTime.UtcNow)
+            {
+                return NotFound("No active authenticated pairing request exists.");
+            }
+
+            PairingCryptoSessionInfo? session = cryptoSessions.GetSession(requestId);
+
+            if (session is null || session.Role != PairingCryptoRole.Responder || session.RemoteDeviceId != request.DeviceId || session.ExpiresUtc <= DateTime.UtcNow)
+            {
+                return Conflict("The responder pairing session is unavailable.");
+            }
+
+            PairingApprovalSnapshot? approval = approvals.GetState(requestId);
+
+            if (approval is null)
+            {
+                return Conflict("Pairing approval state is unavailable.");
+            }
+
+            if (approval.LocalDecision == PairingDecisionState.Pending)
+            {
+                return Ok(new
+                {
+                    requestId,
+                    awaitingLocalDecision = true,
+                    signedDecision = (SignedPairingDecision?)null
+                });
+            }
+
+            try
+            {
+                byte[] initiatorIdentityKey = Convert.FromBase64String(request.PublicKey);
+
+                byte[] responderIdentityKey = Convert.FromBase64String(deviceSecurity.GetPublicIdentity().PublicKey);
+
+                if (!cryptoSessions.TryCreateTranscript(requestId, request.DeviceId, localIdentity.DeviceId, initiatorIdentityKey, responderIdentityKey, security, out byte[] transcriptHash))
+                {
+                    return Conflict("Unable to reconstruct the pairing transcript.");
+                }
+
+                bool approved = approval.LocalDecision == PairingDecisionState.Approved;
+
+                SignedPairingDecision signedDecision = decisionSecurity.CreateDecision(requestId, localIdentity.DeviceId, approved, transcriptHash, deviceSecurity);
+
+                return Ok(new
+                {
+                    requestId,
+                    awaitingLocalDecision = false,
+                    signedDecision
+                });
+            }
+            catch (Exception exception)when (exception is FormatException or CryptographicException or ArgumentException)
+            {
+                return UnprocessableEntity("Unable to sign the responder pairing decision.");
             }
         }
     }

@@ -18,9 +18,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3f37435d-db63-4300-bdfc-ac9e4eb902dc" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/RemoteLink.Desktop/src/components/IncomingPairingRequests.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Desktop/src/components/IncomingPairingRequests.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/RemoteLink.Host/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Host/Program.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/RemoteLink.Host/Services/LanDiscoveryService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Host/Services/LanDiscoveryService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/RemoteLink.Host/Services/PairingCryptoSessionService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Host/Services/PairingCryptoSessionService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/RemoteLink.Host/Services/PairingSessionService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Host/Services/PairingSessionService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/RemoteLink.Signaling/Controllers/WeatherForecastController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/RemoteLink.Signaling/Controllers/WeatherForecastController.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -31,7 +34,7 @@
     <option name="firstShow" value="false" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="46" />
+    <option name="cachedIndexableFilesCount" value="47" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="Git.Settings">
@@ -50,6 +53,7 @@
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/PairingProposalResponse.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/PairingRequest.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/PairingStatus.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/SignedPairingDecision.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/SignedPairingMessage.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/StartPairingRequest.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Core/Models/Pairing/TrustedDevice.cs" root0="FORCE_HIGHLIGHTING" />
@@ -65,8 +69,10 @@
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/DeviceIdentityService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/DeviceSecurityService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/LanDiscoveryService.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/PairingApprovalService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/PairingClientService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/PairingCryptoSessionService.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/PairingDecisionSecurityService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/PairingSecurityService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/PairingSessionService.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/RemoteLink.Host/Services/TlsCertificateService.cs" root0="FORCE_HIGHLIGHTING" />

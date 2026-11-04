@@ -6,7 +6,7 @@ using RemoteLink.Core.Models.Pairing;
 
 namespace RemoteLink.Host.Services
 {
-    public sealed class PairingClientService(DeviceIdentityService identity, DeviceSecurityService security, PairingSecurityService pairingSecurity, PairingCryptoSessionService cryptoSessions)
+    public sealed class PairingClientService(DeviceIdentityService identity, DeviceSecurityService security, PairingSecurityService pairingSecurity, PairingCryptoSessionService cryptoSessions, PairingDecisionSecurityService decisionSecurity, PairingApprovalService approvals, PairingPeerContextService peerContexts)
     {
         public async Task<PairingProposalResponse> SendProposalAsync(StartPairingRequest request, CancellationToken cancellationToken)
         {
@@ -340,7 +340,7 @@ namespace RemoteLink.Host.Services
                 {
                     throw new CryptographicException("The responder identity changed during pairing.");
                 }
-                
+
                 await ConfirmInitiatorAsync(proposal.RequestId, remoteDeviceId, remoteAddress, observedThumbprint, verification.RemoteIdentityFingerprint, cancellationToken);
 
                 return verification;
@@ -348,7 +348,7 @@ namespace RemoteLink.Host.Services
             catch
             {
                 cryptoSessions.RemoveSession(proposal.RequestId);
-                
+
                 throw;
             }
         }
@@ -359,23 +359,23 @@ namespace RemoteLink.Host.Services
             {
                 throw new ArgumentException("Invalid pairing identifiers.");
             }
-            
+
             if (!IPAddress.TryParse(remoteAddress, out IPAddress? address) || address.AddressFamily != AddressFamily.InterNetwork || IPAddress.IsLoopback(address) || address.Equals(IPAddress.Any) || address.Equals(IPAddress.Broadcast))
             {
                 throw new ArgumentException("Invalid remote LAN address.");
             }
-            
+
             PairingCryptoSessionInfo? session = cryptoSessions.GetSession(requestId);
-            
+
             if (session is null || session.Role != PairingCryptoRole.Initiator || session.RemoteDeviceId != expectedRemoteDeviceId || session.RemoteEphemeralPublicKey is null)
             {
                 throw new InvalidOperationException("No verified initiator session is available.");
             }
-            
+
             DeviceSecurityIdentity localIdentity = security.GetPublicIdentity();
 
             byte[] initiatorIdentityKey = Convert.FromBase64String(localIdentity.PublicKey);
-            
+
             string thumbprint = expectedTlsThumbprint.Replace(" ", "").Replace(":", "").ToUpperInvariant();
 
             if (thumbprint.Length != 40 || !thumbprint.All(Uri.IsHexDigit))
@@ -384,27 +384,27 @@ namespace RemoteLink.Host.Services
             }
 
             byte[] expectedCertificateHash = Convert.FromHexString(thumbprint);
-            
+
             using HttpClientHandler handler = new();
-            
+
             handler.ServerCertificateCustomValidationCallback = (_, certificate, _, _) => certificate is not null && CryptographicOperations.FixedTimeEquals(certificate.GetCertHash(), expectedCertificateHash);
 
             using HttpClient client = new(handler)
             {
                 Timeout = TimeSpan.FromSeconds(10)
             };
-            
+
             Uri identityEndpoint = new($"https://{address}:5019/api/lan/identity");
 
             DeviceSecurityIdentity? responderIdentity = await client.GetFromJsonAsync<DeviceSecurityIdentity>(identityEndpoint, cancellationToken);
-            
+
             if (responderIdentity is null || responderIdentity.DeviceId != expectedRemoteDeviceId || !pairingSecurity.IsValidIdentityPublicKey(responderIdentity.PublicKey))
             {
                 throw new CryptographicException("The responder identity is invalid.");
             }
 
             byte[] responderIdentityKey = Convert.FromBase64String(responderIdentity.PublicKey);
-            
+
             byte[] actualFingerprint = SHA256.HashData(responderIdentityKey);
 
             byte[] expectedFingerprint;
@@ -417,17 +417,17 @@ namespace RemoteLink.Host.Services
             {
                 throw new CryptographicException("The expected responder fingerprint is invalid.", exception);
             }
-            
+
             if (!CryptographicOperations.FixedTimeEquals(actualFingerprint, expectedFingerprint))
             {
                 throw new CryptographicException("The responder identity changed during pairing confirmation.");
             }
-            
+
             if (!cryptoSessions.TryCreateTranscript(requestId, identity.DeviceId, expectedRemoteDeviceId, initiatorIdentityKey, responderIdentityKey, pairingSecurity, out byte[] transcriptHash))
             {
                 throw new InvalidOperationException("Unable to reconstruct the initiator transcript.");
             }
-            
+
             SignedPairingMessage signedMessage = pairingSecurity.CreateSignedMessage(requestId, identity.DeviceId, initiatorIdentityKey, session.LocalEphemeralPublicKey, transcriptHash, security);
 
             PairingInitiatorConfirmation confirmation = new()
@@ -436,10 +436,263 @@ namespace RemoteLink.Host.Services
             };
 
             Uri endpoint = new($"https://{address}:5019/api/lan/pairing/confirm-initiator/{requestId:D}");
-            
+
             using HttpResponseMessage response = await client.PostAsJsonAsync(endpoint, confirmation, cancellationToken);
-            
+
             response.EnsureSuccessStatusCode();
+            
+            PairingCryptoSessionInfo? confirmedSession = cryptoSessions.GetSession(requestId);
+
+            if (confirmedSession is null || confirmedSession.Role != PairingCryptoRole.Initiator || confirmedSession.RemoteDeviceId != expectedRemoteDeviceId || confirmedSession.ExpiresUtc <= DateTime.UtcNow)
+            {
+                throw new InvalidOperationException("The initiator pairing session expired during confirmation.");
+            }
+
+            if (!approvals.TryCreate(requestId, expectedRemoteDeviceId, confirmedSession.ExpiresUtc))
+            {
+                throw new InvalidOperationException("Unable to initialize initiator pairing approval state.");
+            }
+            
+            
+            if (!peerContexts.TryCreate(requestId, expectedRemoteDeviceId, remoteAddress, expectedTlsThumbprint, expectedRemoteIdentityFingerprint, confirmedSession.ExpiresUtc))
+            {
+                approvals.Remove(requestId);
+
+                throw new InvalidOperationException("Unable to retain the verified remote pairing context.");
+            }
+
+        }
+
+        public async Task<PairingApprovalSnapshot> SendDecisionAsync(SendPairingDecisionRequest request, CancellationToken cancellationToken)
+        {
+            if (request.RequestId == Guid.Empty || request.RemoteDeviceId == Guid.Empty || request.RemoteDeviceId == identity.DeviceId)
+            {
+                throw new ArgumentException("Invalid pairing identifiers.");
+            }
+
+            if (!IPAddress.TryParse(request.RemoteAddress, out IPAddress? address) || address.AddressFamily != AddressFamily.InterNetwork || IPAddress.IsLoopback(address) || address.Equals(IPAddress.Any) || address.Equals(IPAddress.Broadcast))
+            {
+                throw new ArgumentException("Invalid remote LAN address.");
+            }
+
+            PairingCryptoSessionInfo? session = cryptoSessions.GetSession(request.RequestId);
+
+            if (session is null || session.Role != PairingCryptoRole.Initiator || session.RemoteDeviceId != request.RemoteDeviceId || session.RemoteEphemeralPublicKey is null || session.ExpiresUtc <= DateTime.UtcNow)
+            {
+                throw new InvalidOperationException("The authenticated initiator session is unavailable.");
+            }
+
+            string thumbprint = request.ExpectedTlsThumbprint.Replace(" ", "").Replace(":", "").ToUpperInvariant();
+
+            if (thumbprint.Length != 40 || !thumbprint.All(Uri.IsHexDigit))
+            {
+                throw new ArgumentException("Invalid TLS certificate thumbprint.");
+            }
+
+            byte[] expectedCertificateHash = Convert.FromHexString(thumbprint);
+
+            using HttpClientHandler handler = new();
+
+            handler.ServerCertificateCustomValidationCallback = (_, certificate, _, _) => certificate is not null && CryptographicOperations.FixedTimeEquals(certificate.GetCertHash(), expectedCertificateHash);
+
+            using HttpClient client = new(handler)
+            {
+                Timeout = TimeSpan.FromSeconds(10)
+            };
+
+            Uri identityEndpoint = new($"https://{address}:5019/api/lan/identity");
+
+            DeviceSecurityIdentity? responderIdentity = await client.GetFromJsonAsync<DeviceSecurityIdentity>(identityEndpoint, cancellationToken);
+
+            if (responderIdentity is null || responderIdentity.DeviceId != request.RemoteDeviceId || !pairingSecurity.IsValidIdentityPublicKey(responderIdentity.PublicKey))
+            {
+                throw new CryptographicException("The remote device identity is invalid.");
+            }
+
+            byte[] responderIdentityKey = Convert.FromBase64String(responderIdentity.PublicKey);
+
+            byte[] expectedFingerprint;
+
+            try
+            {
+                expectedFingerprint = Convert.FromHexString(request.ExpectedRemoteIdentityFingerprint);
+            }
+            catch (FormatException exception)
+            {
+                throw new CryptographicException("The expected identity fingerprint is invalid.", exception);
+            }
+
+            byte[] actualFingerprint = SHA256.HashData(responderIdentityKey);
+
+            if (!CryptographicOperations.FixedTimeEquals(expectedFingerprint, actualFingerprint))
+            {
+                throw new CryptographicException("The remote identity changed during pairing.");
+            }
+
+            byte[] initiatorIdentityKey = Convert.FromBase64String(security.GetPublicIdentity().PublicKey);
+
+            if (!cryptoSessions.TryCreateTranscript(request.RequestId, identity.DeviceId, request.RemoteDeviceId, initiatorIdentityKey, responderIdentityKey, pairingSecurity, out byte[] transcriptHash))
+            {
+                throw new InvalidOperationException("Unable to reconstruct the pairing transcript.");
+            }
+
+            SignedPairingDecision decision = decisionSecurity.CreateDecision(request.RequestId, identity.DeviceId, request.Approved, transcriptHash, security);
+
+            Uri endpoint = new($"https://{address}:5019/api/lan/pairing/decision/{request.RequestId:D}");
+
+            using HttpResponseMessage response = await client.PostAsJsonAsync(endpoint, decision, cancellationToken);
+
+            response.EnsureSuccessStatusCode();
+
+            PairingApprovalSnapshot? result = await response.Content.ReadFromJsonAsync<PairingApprovalSnapshot>(cancellationToken: cancellationToken);
+
+            return result ?? throw new InvalidOperationException("The remote Host returned an invalid pairing decision response.");
+        }
+
+        public async Task<PairingApprovalSnapshot> SendStoredDecisionAsync(LocalPairingDecisionRequest request, CancellationToken cancellationToken)
+        {
+            PairingPeerContext? peer = peerContexts.Get(request.RequestId);
+
+            if (peer is null)
+            {
+                throw new InvalidOperationException("No verified remote pairing context exists.");
+            }
+
+            PairingApprovalSnapshot? state = approvals.GetState(request.RequestId);
+
+            if (state is null || state.RemoteDeviceId != peer.RemoteDeviceId)
+            {
+                throw new InvalidOperationException("Pairing approval state is unavailable.");
+            }
+
+            PairingDecisionState requestedDecision = request.Approved ? PairingDecisionState.Approved : PairingDecisionState.Rejected;
+
+            if (state.LocalDecision != PairingDecisionState.Pending && state.LocalDecision != requestedDecision)
+            {
+                throw new InvalidOperationException("The local pairing decision cannot be changed.");
+            }
+
+            if (state.Rejected && state.LocalDecision != requestedDecision)
+            {
+                throw new InvalidOperationException("The pairing request has already been rejected.");
+            }
+
+            PairingApprovalSnapshot? recorded = approvals.SetLocalApproval(request.RequestId, request.Approved);
+
+            if (recorded is null)
+            {
+                throw new InvalidOperationException("Unable to record the local pairing decision.");
+            }
+
+            await SendDecisionAsync(new SendPairingDecisionRequest
+                {
+                    RequestId = request.RequestId,
+                    RemoteDeviceId = peer.RemoteDeviceId,
+                    RemoteAddress = peer.RemoteAddress,
+                    ExpectedTlsThumbprint = peer.TlsThumbprint,
+                    ExpectedRemoteIdentityFingerprint = peer.IdentityFingerprint,
+                    Approved = request.Approved
+                },
+                cancellationToken);
+
+            return recorded;
+        }
+        
+        public async Task<PairingApprovalSnapshot> RefreshResponderDecisionAsync(Guid requestId, CancellationToken cancellationToken)
+        {
+            PairingPeerContext? peer = peerContexts.Get(requestId) ?? throw new InvalidOperationException("No verified pairing context exists.");
+
+            PairingApprovalSnapshot? state = approvals.GetState(requestId);
+
+            if (state is null || state.RemoteDeviceId != peer.RemoteDeviceId)
+            {
+                throw new InvalidOperationException("Pairing approval state is unavailable.");
+            }
+
+            PairingCryptoSessionInfo? session = cryptoSessions.GetSession(requestId);
+
+            if (session is null || session.Role != PairingCryptoRole.Initiator || session.RemoteDeviceId != peer.RemoteDeviceId || session.RemoteEphemeralPublicKey is null || session.ExpiresUtc <= DateTime.UtcNow)
+            {
+                throw new InvalidOperationException("The initiator pairing session is unavailable.");
+            }
+
+            byte[] expectedCertificateHash = Convert.FromHexString(peer.TlsThumbprint);
+
+            using HttpClientHandler handler = new();
+
+            handler.ServerCertificateCustomValidationCallback = (_, certificate, _, _) => certificate is not null && CryptographicOperations.FixedTimeEquals(certificate.GetCertHash(), expectedCertificateHash);
+
+            using HttpClient httpClient = new(handler)
+            {
+                Timeout = TimeSpan.FromSeconds(10)
+            };
+
+            Uri identityEndpoint = new($"https://{peer.RemoteAddress}:5019/api/lan/identity");
+
+            DeviceSecurityIdentity? responderIdentity = await httpClient.GetFromJsonAsync<DeviceSecurityIdentity>(identityEndpoint, cancellationToken);
+
+            if (responderIdentity is null || responderIdentity.DeviceId != peer.RemoteDeviceId || !pairingSecurity.IsValidIdentityPublicKey(responderIdentity.PublicKey))
+            {
+                throw new CryptographicException("The responder identity is invalid.");
+            }
+
+            byte[] responderIdentityKey = Convert.FromBase64String(responderIdentity.PublicKey);
+
+            byte[] actualFingerprint = SHA256.HashData(responderIdentityKey);
+
+            byte[] expectedFingerprint = Convert.FromHexString(peer.IdentityFingerprint);
+
+            if (!CryptographicOperations.FixedTimeEquals(actualFingerprint, expectedFingerprint))
+            {
+                throw new CryptographicException("The responder identity changed during pairing.");
+            }
+
+            Uri decisionEndpoint = new($"https://{peer.RemoteAddress}:5019/api/lan/pairing/decision/{requestId:D}");
+
+            PairingDecisionResponse? response = await httpClient.GetFromJsonAsync<PairingDecisionResponse>(decisionEndpoint, cancellationToken);
+
+            if (response is null || response.RequestId != requestId)
+            {
+                throw new CryptographicException("The responder returned an invalid decision response.");
+            }
+
+            if (response.AwaitingLocalDecision)
+            {
+                if (response.SignedDecision is not null)
+                {
+                    throw new CryptographicException("The responder returned inconsistent decision state.");
+                }
+
+                return state;
+            }
+
+            if (response.SignedDecision is null)
+            {
+                throw new CryptographicException("The responder decision is missing its signature.");
+            }
+
+            byte[] initiatorIdentityKey = Convert.FromBase64String(security.GetPublicIdentity().PublicKey);
+
+            if (!cryptoSessions.TryCreateTranscript(requestId, identity.DeviceId, peer.RemoteDeviceId, initiatorIdentityKey, responderIdentityKey, pairingSecurity, out byte[] transcriptHash))
+            {
+                throw new InvalidOperationException("Unable to reconstruct the pairing transcript.");
+            }
+
+            bool verified = decisionSecurity.VerifyDecision(response.SignedDecision, requestId, peer.RemoteDeviceId, transcriptHash, responderIdentityKey);
+
+            if (!verified)
+            {
+                throw new CryptographicException("The responder's signed decision could not be verified.");
+            }
+
+            PairingApprovalSnapshot? updated = approvals.SetRemoteApproval(requestId, peer.RemoteDeviceId, response.SignedDecision.Approved);
+
+            if (updated is null)
+            {
+                throw new InvalidOperationException("The responder decision conflicts with existing pairing state.");
+            }
+
+            return updated;
         }
     }
 }

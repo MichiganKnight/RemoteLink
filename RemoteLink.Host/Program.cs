@@ -19,6 +19,10 @@ namespace RemoteLink.Host
             builder.Services.AddSingleton<PairingSecurityService>();
             builder.Services.AddSingleton<PairingClientService>();
             builder.Services.AddSingleton<PairingCryptoSessionService>();
+            builder.Services.AddSingleton<PairingApprovalService>();
+            builder.Services.AddSingleton<PairingDecisionSecurityService>();
+            builder.Services.AddSingleton<PairingPeerContextService>();
+            builder.Services.AddSingleton<TrustedDeviceService>();
 
             builder.Services.AddHostedService(provider => provider.GetRequiredService<LanDiscoveryService>());
             
@@ -45,6 +49,8 @@ namespace RemoteLink.Host
                     allowed |= context.Request.Method == HttpMethods.Post && context.Request.Path.Equals("/api/lan/pairing/propose", StringComparison.OrdinalIgnoreCase);
                     allowed |= context.Request.Method == HttpMethods.Post && context.Request.Path.StartsWithSegments("/api/lan/pairing/handshake", StringComparison.OrdinalIgnoreCase);
                     allowed |= context.Request.Method == HttpMethods.Post && context.Request.Path.StartsWithSegments("/api/lan/pairing/confirm-initiator", StringComparison.OrdinalIgnoreCase);
+                    allowed |= context.Request.Method == HttpMethods.Post && context.Request.Path.StartsWithSegments("/api/lan/pairing/decision", StringComparison.OrdinalIgnoreCase);
+                    allowed |= context.Request.Method == HttpMethods.Get && context.Request.Path.StartsWithSegments("/api/lan/pairing/decision", StringComparison.OrdinalIgnoreCase);
 
                     if (!allowed)
                     {

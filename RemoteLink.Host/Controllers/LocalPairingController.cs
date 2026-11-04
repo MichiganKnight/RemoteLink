@@ -9,7 +9,7 @@ namespace RemoteLink.Host.Controllers
 {
     [ApiController]
     [Route("api/local/pairing")]
-    public class LocalPairingController(PairingClientService client, PairingSessionService sessions, LanDiscoveryService discovery, PairingCryptoSessionService cryptoSessions, PairingSecurityService pairingSecurity, DeviceIdentityService identity, DeviceSecurityService deviceSecurity) : ControllerBase
+    public class LocalPairingController(PairingClientService client, PairingSessionService sessions, LanDiscoveryService discovery, PairingCryptoSessionService cryptoSessions, PairingSecurityService pairingSecurity, DeviceIdentityService identity, DeviceSecurityService deviceSecurity, PairingApprovalService approvals) : ControllerBase
     {
         [HttpPost("start")]
         public async Task<IActionResult> Start([FromBody] StartPairingRequest request, CancellationToken cancellationToken)
@@ -51,7 +51,7 @@ namespace RemoteLink.Host.Controllers
 
             return Ok(requests);
         }
-        
+
         [HttpPost("verify")]
         public async Task<IActionResult> Verify([FromBody] VerifyPairingRequest request, CancellationToken cancellationToken)
         {
@@ -92,7 +92,7 @@ namespace RemoteLink.Host.Controllers
                 return StatusCode(504, "Pairing verification timed out.");
             }
         }
-        
+
         [HttpPost("start-discovered/{deviceId:guid}")]
         public async Task<IActionResult> StartDiscovered(Guid deviceId, CancellationToken cancellationToken)
         {
@@ -143,14 +143,14 @@ namespace RemoteLink.Host.Controllers
             {
                 return NotFound();
             }
-            
+
             PairingRequest? request = sessions.GetRequest(requestId);
 
             if (request is null || request.Status != PairingStatus.AwaitingConfirmation || request.ExpiresUtc <= DateTime.UtcNow)
             {
                 return NotFound("No authenticated pairing request is awaiting confirmation.");
             }
-            
+
             PairingCryptoSessionInfo? session = cryptoSessions.GetSession(requestId);
 
             if (session is null || session.Role != PairingCryptoRole.Responder || session.RemoteDeviceId != request.DeviceId || session.ExpiresUtc <= DateTime.UtcNow)
@@ -180,6 +180,106 @@ namespace RemoteLink.Host.Controllers
             catch (Exception exception) when (exception is FormatException or CryptographicException or InvalidOperationException)
             {
                 return Conflict("The pairing verification code is unavailable.");
+            }
+        }
+        
+        //[HttpPost("decision")]
+        public async Task<IActionResult> SendDecision([FromBody] SendPairingDecisionRequest request, CancellationToken cancellationToken)
+        {
+            if (HttpContext.Connection.LocalPort != 5017 || HttpContext.Connection.RemoteIpAddress is not { } remoteIp || !IPAddress.IsLoopback(remoteIp))
+            {
+                return NotFound();
+            }
+
+            try
+            {
+                PairingApprovalSnapshot result = await client.SendDecisionAsync(request, cancellationToken);
+
+                return Ok(result);
+            }
+            catch (ArgumentException exception)
+            {
+                return BadRequest(exception.Message);
+            }
+            catch (CryptographicException exception)
+            {
+                return UnprocessableEntity(exception.Message);
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Conflict(exception.Message);
+            }
+            catch (HttpRequestException exception)
+            {
+                return StatusCode(502, $"Unable to deliver pairing decision: {exception.Message}");
+            }
+            catch (OperationCanceledException)when (!cancellationToken.IsCancellationRequested)
+            {
+                return StatusCode(504, "The remote Host did not respond in time.");
+            }
+        }
+        
+        [HttpPost("incoming/decision")]
+        public IActionResult DecideIncoming([FromBody] LocalPairingDecisionRequest decision)
+        {
+            if (HttpContext.Connection.LocalPort != 5017 || HttpContext.Connection.RemoteIpAddress is not { } remoteIp || !IPAddress.IsLoopback(remoteIp))
+            {
+                return NotFound();
+            }
+
+            PairingRequest? request = sessions.GetRequest(decision.RequestId);
+
+            if (request is null || request.Status != PairingStatus.AwaitingConfirmation || request.ExpiresUtc <= DateTime.UtcNow)
+            {
+                return NotFound("No authenticated incoming pairing request exists.");
+            }
+
+            PairingCryptoSessionInfo? session = cryptoSessions.GetSession(decision.RequestId);
+
+            if (session is null || session.Role != PairingCryptoRole.Responder || session.RemoteDeviceId != request.DeviceId || session.ExpiresUtc <= DateTime.UtcNow)
+            {
+                return Conflict("The responder pairing session is unavailable.");
+            }
+
+            PairingApprovalSnapshot? updated = approvals.SetLocalApproval(decision.RequestId, decision.Approved);
+
+            if (updated is null)
+            {
+                return Conflict("The local pairing decision cannot be changed.");
+            }
+
+            return Ok(updated);
+        }
+        
+        [HttpGet("outgoing/{requestId:guid}/decision")]
+        public async Task<IActionResult> GetOutgoingDecision(Guid requestId, CancellationToken cancellationToken)
+        {
+            if (HttpContext.Connection.LocalPort != 5017 || HttpContext.Connection.RemoteIpAddress is not { } remoteIp || !IPAddress.IsLoopback(remoteIp))
+            {
+                return NotFound();
+            }
+
+            try
+            {
+                PairingApprovalSnapshot result = await client.RefreshResponderDecisionAsync(requestId, cancellationToken);
+
+                return Ok(result);
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Conflict(exception.Message);
+            }
+            catch (CryptographicException exception)
+            {
+                return UnprocessableEntity(exception.Message);
+            }
+            catch (HttpRequestException exception)
+            {
+                return StatusCode(502, $"Unable to retrieve responder decision: {exception.Message}");
+            }
+            catch (OperationCanceledException)when (!cancellationToken.IsCancellationRequested)
+            {
+                return StatusCode(504, "The responder did not reply in time.");
             }
         }
     }
