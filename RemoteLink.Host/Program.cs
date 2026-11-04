@@ -1,6 +1,7 @@
 using System.Net;
 using Microsoft.EntityFrameworkCore;
 using RemoteLink.Host.Data;
+using RemoteLink.Host.Hubs;
 using RemoteLink.Host.Services;
 
 namespace RemoteLink.Host
@@ -44,8 +45,12 @@ namespace RemoteLink.Host
 
             builder.Services.AddSingleton<ChatPeerAddressResolver>();
             builder.Services.AddHostedService<ChatDeliveryWorker>();
+            
+            builder.Services.AddSingleton<ChatNotificationService>();
 
             builder.Services.AddHostedService(provider => provider.GetRequiredService<LanDiscoveryService>());
+            
+            builder.Services.AddSignalR();
             
             builder.WebHost.ConfigureKestrel(options =>
             {
@@ -60,6 +65,8 @@ namespace RemoteLink.Host
             });
             
             WebApplication app = builder.Build();
+            
+            app.MapHub<LocalChatHub>("/hubs/local-chat");
 
             using (IServiceScope scope = app.Services.CreateScope())
             {

@@ -67,6 +67,10 @@ export default function ChatPage() {
     const messagesRef = useRef<ChatMessage[]>([]);
     const requestVersionRef = useRef(0);
 
+    const refreshInProgressRef = useRef(false);
+    const refreshRequestedRef = useRef(false);
+    const lastVisibleMessageIdRef = useRef<string | null>(null);
+
     const selectedDevice = trusted.find(device => device.deviceId === selectedDeviceId);
 
     const selectedConversation = conversations.find(conversation => conversation.remoteDeviceId === selectedDeviceId);
@@ -128,9 +132,9 @@ export default function ChatPage() {
     useEffect(() => {
         const interval = window.setInterval(() => {
             void refreshConversations().catch(error => {
-                console.error("Unable to refresh chat conversations:", error);
+                console.error("Unable to refresh conversations:", error);
             });
-        }, 5000);
+        }, 30000);
 
         return () => window.clearInterval(interval);
     }, [refreshConversations]);
@@ -142,6 +146,108 @@ export default function ChatPage() {
     useEffect(() => {
         messagesRef.current = messages;
     }, [messages]);
+
+    const refreshActiveMessages = useCallback(async () => {
+        if (refreshInProgressRef.current) {
+            refreshRequestedRef.current = true;
+
+            return;
+        }
+
+        refreshInProgressRef.current = true;
+
+        try {
+            do {
+                refreshRequestedRef.current = false;
+
+                const deviceId = selectedDeviceRef.current;
+
+                if (!deviceId) {
+                    break;
+                }
+
+                const version = requestVersionRef.current;
+
+                const latest = await window.remoteLink.getChatMessages(deviceId, null, null, PAGE_SIZE);
+
+                if (selectedDeviceRef.current !== deviceId || requestVersionRef.current !== version) {
+                    continue;
+                }
+
+                setMessages(current => {
+                    const latestIds = new Set(latest.map(message => message.id));
+
+                    const older = current.filter(message => !latestIds.has(message.id));
+
+                    const combined = [...older, ...latest];
+
+                    combined.sort((a, b) => {
+                        const timeDifference = Date.parse(a.createdUtc) - Date.parse(b.createdUtc);
+
+                        return timeDifference || a.id.localeCompare(b.id);
+                    });
+
+                    messagesRef.current = combined;
+
+                    return combined;
+                });
+
+                if (selectedDeviceRef.current !== deviceId || requestVersionRef.current !== version) {
+                    continue;
+                }
+
+                await window.remoteLink.markRead(deviceId);
+
+                if (selectedDeviceRef.current === deviceId && requestVersionRef.current === version) {
+                    await refreshConversations();
+                }
+            } while (refreshRequestedRef.current);
+        } catch (error) {
+            console.error("Unable to refresh active chat:", error);
+        } finally {
+            refreshInProgressRef.current = false;
+        }
+    }, [refreshConversations]);
+
+    useEffect(() => {
+        let active = true;
+
+        const unsubscribe = window.remoteLink.onChatConversationChanged(event => {
+            if (!active) {
+                return;
+            }
+
+            const currentDeviceId = selectedDeviceRef.current;
+
+            const affectsActiveConversation = currentDeviceId !== null && (event.deviceId === currentDeviceId || event.deviceId === "*");
+
+            if (affectsActiveConversation) {
+                void refreshActiveMessages();
+            } else {
+                void refreshConversations().catch(error => {
+                    console.error("Unable to refresh conversation list:", error);
+                });
+            }
+        });
+
+        return () => {
+            active = false;
+            unsubscribe();
+        };
+    }, [refreshActiveMessages, refreshConversations]);
+
+    useEffect(() => {
+        const newestMessageId = messages.at(-1)?.id ?? null;
+
+        if (newestMessageId && newestMessageId !== lastVisibleMessageIdRef.current && !loadingOlder && !loadingMessages) {
+            messagesEndRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "end"
+            });
+        }
+
+        lastVisibleMessageIdRef.current = newestMessageId;
+    }, [messages, loadingOlder, loadingMessages]);
 
     async function selectDevice(deviceId: string) {
         const version = ++requestVersionRef.current;
@@ -156,6 +262,8 @@ export default function ChatPage() {
 
         try {
             await window.remoteLink.openChatConversation(deviceId);
+
+            await window.remoteLink.markRead(deviceId);
 
             const history = await window.remoteLink.getChatMessages(deviceId, null, null, PAGE_SIZE);
 
@@ -174,6 +282,10 @@ export default function ChatPage() {
             });
 
             await refreshConversations();
+
+            if (requestVersionRef.current === version) {
+                void refreshActiveMessages();
+            }
         } catch (error) {
             if (requestVersionRef.current === version) {
                 setError(errorMessage(error));
@@ -253,6 +365,8 @@ export default function ChatPage() {
             }
 
             await refreshConversations();
+
+            void refreshActiveMessages();
         } catch (error) {
             setError(errorMessage(error));
         } finally {

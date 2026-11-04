@@ -7,7 +7,7 @@ using RemoteLink.Host.Data;
 
 namespace RemoteLink.Host.Services
 {
-    public sealed class ChatService(RemoteLinkDbContext database, TrustedDeviceService trustedDevices, DeviceIdentityService identity)
+    public sealed class ChatService(RemoteLinkDbContext database, TrustedDeviceService trustedDevices, DeviceIdentityService identity, ChatNotificationService notifications)
     {
         private void EnsureTrusted(Guid deviceId)
         {
@@ -109,6 +109,8 @@ namespace RemoteLink.Host.Services
             conversation.LastMessageUtc = now;
 
             await database.SaveChangesAsync(cancellationToken);
+
+            await notifications.NotifyConversationChangedAsync(deviceId, cancellationToken);
             
             return ToResponse(message);
         }
@@ -233,6 +235,8 @@ namespace RemoteLink.Host.Services
             try
             {
                 await database.SaveChangesAsync(cancellationToken);
+                
+                await notifications.NotifyConversationChangedAsync(authenticatedDeviceId, cancellationToken);
             }
             catch (DbUpdateException exception)when (exception.InnerException is SqliteException
                                                      {
@@ -294,8 +298,37 @@ namespace RemoteLink.Host.Services
             message.DeliveredUtc = deliveredUtc;
 
             await database.SaveChangesAsync(cancellationToken);
+            
+            await notifications.NotifyConversationChangedAsync(remoteDeviceId, cancellationToken);
 
             return true;
+        }
+        
+        public async Task<int> MarkConversationReadAsync(Guid deviceId, CancellationToken cancellationToken = default)
+        {
+            EnsureTrusted(deviceId);
+
+            ChatConversation? conversation = await database.ChatConversations.FirstOrDefaultAsync(c => c.RemoteDeviceId == deviceId, cancellationToken);
+
+            if (conversation is null)
+            {
+                return 0;
+            }
+
+            DateTime now = DateTime.UtcNow;
+
+            int updated = await database.ChatMessages.Where(m => m.ConversationId == conversation.Id && m.Direction == ChatMessageDirection.Incoming && m.ReadUtc == null).ExecuteUpdateAsync(setters => setters.SetProperty(m => m.ReadUtc, now).SetProperty(m => m.Status, ChatMessageStatus.Read), cancellationToken);
+
+            if (updated > 0)
+            {
+                conversation.LastReadUtc = now;
+
+                await database.SaveChangesAsync(cancellationToken);
+            
+                await notifications.NotifyConversationChangedAsync(deviceId, cancellationToken);
+            }
+
+            return updated;
         }
 
         private async Task<ChatConversationResponse> GetConversationResponseAsync(ChatConversation conversation, CancellationToken cancellationToken)

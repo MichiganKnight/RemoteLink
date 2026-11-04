@@ -142,6 +142,9 @@ declare global {
             openChatConversation: (deviceId: string) => Promise<ChatConversation>;
             getChatMessages: (deviceId: string, beforeUtc?: string | null, beforeId?: string | null, limit?: number) => Promise<ChatMessage[]>;
             sendChatMessage: (deviceId: string, content: string) => Promise<ChatMessage>;
+            markRead: (deviceId: string) => Promise<{deviceId: string; markedRead: number;}>;
+
+            onChatConversationChanged: (callback: (event: { deviceId: string }) => void ) => () => void;
         }
     }
 }

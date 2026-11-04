@@ -24,5 +24,22 @@ contextBridge.exposeInMainWorld("remoteLink", {
     getChatConversations: () => ipcRenderer.invoke("chat:get-conversations"),
     openChatConversation: (deviceId) => ipcRenderer.invoke("chat:open-conversation", deviceId),
     getChatMessages: (deviceId, beforeUtc = null, beforeId = null, limit = 50) => ipcRenderer.invoke("chat:get-messages", deviceId, beforeUtc, beforeId, limit),
-    sendChatMessage: (deviceId, content) => ipcRenderer.invoke("chat:send-message", deviceId, content)
+    sendChatMessage: (deviceId, content) => ipcRenderer.invoke("chat:send-message", deviceId, content),
+    markRead: (deviceId) => ipcRenderer.invoke("chat:mark-read", deviceId),
+
+    onChatConversationChanged: (callback) => {
+        if (typeof callback !== "function") {
+            throw new TypeError("Callback must be a function.");
+        }
+
+        const listener = (_event, data) => {
+            callback(data);
+        };
+
+        ipcRenderer.on("chat:conversation-changed", listener);
+
+        return () => {
+            ipcRenderer.removeListener("chat:conversation-changed", listener);
+        };
+    },
 });

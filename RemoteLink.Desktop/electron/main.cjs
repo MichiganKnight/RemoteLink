@@ -7,6 +7,8 @@ const isDevelopment = process.env.ELECTRON_DEV === "1";
 
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
 
+const signalR = require("@microsoft/signalr");
+
 if (!gotSingleInstanceLock) {
     app.quit();
 } else {
@@ -72,6 +74,123 @@ async function getHostStatus() {
         };
     } finally {
         clearTimeout(timeout);
+    }
+}
+
+let chatHubConnection = null;
+let chatHubStarting = false;
+let chatHubRetryTimer = null;
+let chatHubStopped = false;
+
+function broadcastChatChanged(deviceId) {
+    if (typeof deviceId !== "string") {
+        return;
+    }
+
+    for (const window of BrowserWindow.getAllWindows()) {
+        if (!window.isDestroyed() && !window.webContents.isDestroyed()) {
+            window.webContents.send("chat:conversation-changed", {
+                deviceId
+            });
+        }
+    }
+}
+
+function scheduleChatHubReconnect() {
+    if (chatHubStopped || chatHubRetryTimer !== null) {
+        return;
+    }
+
+    chatHubRetryTimer = setTimeout(() => {
+        chatHubRetryTimer = null;
+        void startChatHub();
+    }, 5000);
+}
+
+async function startChatHub() {
+    if (chatHubStopped || chatHubStarting) {
+        return;
+    }
+
+    if (chatHubConnection) {
+        if (chatHubConnection.state !== signalR.HubConnectionState.Disconnected) {
+            return;
+        }
+
+        await chatHubConnection.stop();
+        chatHubConnection = null;
+    }
+
+    chatHubStarting = true;
+
+    try {
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl(`${HOST_URL}/hubs/local-chat`, {
+                transport: signalR.HttpTransportType.WebSockets,
+                skipNegotiation: true
+            })
+            .withAutomaticReconnect([0, 2000, 5000, 10000])
+            .configureLogging(signalR.LogLevel.Warning)
+            .build();
+
+        connection.on("ConversationChanged", event => {
+            broadcastChatChanged(event?.deviceId);
+        });
+
+        connection.onreconnected(() => {
+            console.log("[RemoteLink] Chat SignalR reconnected.");
+
+            broadcastChatChanged("*");
+        });
+
+        connection.onclose(error => {
+            if (chatHubConnection !== connection || chatHubStopped) {
+                return;
+            }
+
+            console.warn("[RemoteLink] Chat SignalR disconnected:", error);
+
+            chatHubConnection = null;
+            broadcastChatChanged("*");
+            scheduleChatHubReconnect();
+        });
+
+        chatHubConnection = connection;
+
+        await connection.start();
+
+        console.log("[RemoteLink] Chat SignalR connected.");
+
+        broadcastChatChanged("*");
+    } catch (error) {
+        console.warn("[RemoteLink] Unable to connect chat SignalR:", error);
+
+        if (chatHubConnection) {
+            const failedConnection = chatHubConnection;
+            chatHubConnection = null;
+
+            await failedConnection.stop();
+        }
+
+        scheduleChatHubReconnect();
+    } finally {
+        chatHubStarting = false;
+    }
+}
+
+async function stopChatHub() {
+    chatHubStopped = true;
+
+    if (chatHubRetryTimer !== null) {
+        clearTimeout(chatHubRetryTimer);
+        chatHubRetryTimer = null;
+    }
+
+    const connection = chatHubConnection;
+    chatHubConnection = null;
+
+    if (connection) {
+        await connection.stop();
     }
 }
 
@@ -342,6 +461,14 @@ function registerIpcHandlers() {
             content
         });
     });
+
+    ipcMain.handle("chat:mark-read", (_event, deviceId) => {
+        if (typeof deviceId !== "string" || !chatGuid.test(deviceId)) {
+            throw new Error("Invalid device ID.");
+        }
+
+        return chatApi(`conversations/${deviceId}/read`, "POST");
+    });
 }
 
 function createWindow() {
@@ -390,6 +517,8 @@ function initializeApplication() {
 
         await startHost(app);
 
+        void startChatHub();
+
         app.on("activate", () => {
             if (BrowserWindow.getAllWindows().length === 0) {
                 createWindow();
@@ -416,6 +545,7 @@ app.on("before-quit", event => {
 
     void (async () => {
         try {
+            await stopChatHub();
             await stopHost();
         } catch (error) {
             console.error("[RemoteLink] Shutdown error:", error);

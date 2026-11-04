@@ -100,5 +100,24 @@ namespace RemoteLink.Host.Controllers
             
             return Ok(await chat.GetPendingMessagesAsync(cancellationToken));
         }
+        
+        [HttpPost("conversations/{deviceId:guid}/read")]
+        public async Task<IActionResult> MarkConversationRead(Guid deviceId, CancellationToken cancellationToken)
+        {
+            try
+            {
+                int updated = await chat.MarkConversationReadAsync(deviceId, cancellationToken);
+
+                return Ok(new
+                {
+                    deviceId,
+                    markedRead = updated
+                });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+        }
     }
 }
