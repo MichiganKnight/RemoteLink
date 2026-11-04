@@ -31,6 +31,34 @@ export interface IncomingPairingRequest {
     status: number;
 }
 
+export interface StartPairingRequest {
+    deviceId: string;
+    address: string;
+    expectedTlsThumbprint: string;
+}
+
+export interface PairingProposalResponse {
+    requestId: string;
+    acceptedForReview: boolean;
+    message: string;
+}
+
+export interface VerifyPairingRequest {
+    requestId: string;
+    deviceId: string;
+    address: string;
+    expectedTlsThumbprint: string;
+}
+
+export interface PairingHandshakeVerification {
+    requestId: string;
+    remoteDeviceId: string;
+    remoteDeviceName: string;
+    remoteIdentityFingerprint: string;
+    verificationCode: string;
+    signatureVerified: boolean;
+}
+
 declare global {
     interface Window {
         remoteLink: {
@@ -41,6 +69,10 @@ declare global {
             getHostStatus: () => Promise<HostStatus>;
             getDevices: () => Promise<DiscoveredDevice[]>;
             getIncomingPairingRequests: () => Promise<IncomingPairingRequest[]>;
+
+            startPairing: (request: StartPairingRequest) => Promise<PairingProposalResponse>;
+            verifyPairing: (request: VerifyPairingRequest) => Promise<PairingHandshakeVerification>;
+            startDiscoveredPairing: (deviceId: string) => Promise<PairingHandshakeVerification>;
         }
     }
 }

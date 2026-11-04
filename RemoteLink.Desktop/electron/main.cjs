@@ -112,6 +112,68 @@ function registerIpcHandlers() {
 
         return await response.json();
     });
+
+    ipcMain.handle("pairing:start", async (_event, request) => {
+        const response = await fetch(`${HOST_URL}/api/local/pairing/start`, {
+            method: "POST",
+            signal: AbortSignal.timeout(15000),
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json"
+            },
+            body: JSON.stringify(request)
+        });
+
+        if (!response.ok) {
+            const message = await response.text();
+
+            throw new Error(`Pairing request failed (${response.status}): ${message}`);
+        }
+
+        return await response.json();
+    });
+
+    ipcMain.handle("pairing:verify", async (_event, request) => {
+        const response = await fetch(`${HOST_URL}/api/local/pairing/verify`, {
+            method: "POST",
+            signal: AbortSignal.timeout(15000),
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json"
+            },
+            body: JSON.stringify(request)
+        });
+
+        if (!response.ok) {
+            const message = await response.text();
+
+            throw new Error(`Pairing verification failed (${response.status}): ${message}`);
+        }
+
+        return await response.json();
+    });
+
+    ipcMain.handle("pairing:start-discovered", async (_event, deviceId) => {
+        if (typeof deviceId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(deviceId)) {
+            throw new Error("Invalid device ID.");
+        }
+
+        const response = await fetch(`${HOST_URL}/api/local/pairing/start-discovered/${deviceId}`, {
+            method: "POST",
+            signal: AbortSignal.timeout(30000),
+            headers: {
+                Accept: "application/json"
+            }
+        });
+
+        if (!response.ok) {
+            const message = await response.text();
+
+            throw new Error(`Unable to start pairing (${response.status}): ${message}`);
+        }
+
+        return await response.json();
+    });
 }
 
 function createWindow() {

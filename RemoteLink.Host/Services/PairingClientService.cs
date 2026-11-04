@@ -257,5 +257,97 @@ namespace RemoteLink.Host.Services
                 SignatureVerified = true
             };
         }
+
+        public async Task<PairingHandshakeVerification> StartDiscoveredPairingAsync(Guid remoteDeviceId, string remoteAddress, CancellationToken cancellationToken)
+        {
+            if (remoteDeviceId == Guid.Empty || remoteDeviceId == identity.DeviceId)
+            {
+                throw new ArgumentException("Invalid remote device ID.");
+            }
+
+            if (!IPAddress.TryParse(remoteAddress, out IPAddress? address) || address.AddressFamily != System.Net.Sockets.AddressFamily.InterNetwork || IPAddress.IsLoopback(address) || address.Equals(IPAddress.Any) ||
+                address.Equals(IPAddress.Broadcast) || address.IsIPv6LinkLocal || address.IsIPv6Multicast)
+            {
+                throw new ArgumentException("Invalid LAN address.");
+            }
+
+            byte[]? observedCertificateHash = null;
+
+            using HttpClientHandler handler = new();
+
+            handler.ServerCertificateCustomValidationCallback = (_, certificate, _, _) =>
+            {
+                if (certificate is null)
+                {
+                    return false;
+                }
+
+                byte[] currentHash = certificate.GetCertHash();
+
+                if (observedCertificateHash is null)
+                {
+                    observedCertificateHash = currentHash;
+
+                    return true;
+                }
+
+                return CryptographicOperations.FixedTimeEquals(observedCertificateHash, currentHash);
+            };
+
+            using HttpClient httpClient = new(handler)
+            {
+                Timeout = TimeSpan.FromSeconds(10)
+            };
+
+            Uri identityEndpoint = new($"https://{address}:5019/api/lan/identity");
+
+            using HttpResponseMessage identityResponse = await httpClient.GetAsync(identityEndpoint, cancellationToken);
+
+            identityResponse.EnsureSuccessStatusCode();
+
+            DeviceSecurityIdentity? remoteIdentity = await identityResponse.Content.ReadFromJsonAsync<DeviceSecurityIdentity>(cancellationToken: cancellationToken);
+
+            if (remoteIdentity is null || remoteIdentity.DeviceId != remoteDeviceId || !pairingSecurity.IsValidIdentityPublicKey(remoteIdentity.PublicKey))
+            {
+                throw new CryptographicException("The remote identity does not match the discovered device.");
+            }
+
+            if (observedCertificateHash is null)
+            {
+                throw new CryptographicException("The remote TLS certificate could not be observed.");
+            }
+
+            string observedThumbprint = Convert.ToHexString(observedCertificateHash);
+
+            PairingProposalResponse proposal = await SendProposalAsync(new StartPairingRequest
+                {
+                    DeviceId = remoteDeviceId,
+                    Address = remoteAddress,
+                    ExpectedTlsThumbprint = observedThumbprint
+                },
+                cancellationToken);
+
+            try
+            {
+                PairingHandshakeVerification verification = await VerifyHandshakeAsync(proposal.RequestId, remoteDeviceId, remoteAddress, observedThumbprint, cancellationToken);
+
+                byte[] expectedFingerprint = SHA256.HashData(Convert.FromBase64String(remoteIdentity.PublicKey));
+
+                byte[] verifiedFingerprint = Convert.FromHexString(verification.RemoteIdentityFingerprint);
+
+                if (!CryptographicOperations.FixedTimeEquals(expectedFingerprint, verifiedFingerprint))
+                {
+                    throw new CryptographicException("The responder identity changed during pairing.");
+                }
+
+                return verification;
+            }
+            catch
+            {
+                cryptoSessions.RemoveSession(proposal.RequestId);
+                
+                throw;
+            }
+        }
     }
 }

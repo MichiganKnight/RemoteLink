@@ -9,7 +9,7 @@ namespace RemoteLink.Host.Controllers
 {
     [ApiController]
     [Route("api/local/pairing")]
-    public class LocalPairingController(PairingClientService client, PairingSessionService sessions) : ControllerBase
+    public class LocalPairingController(PairingClientService client, PairingSessionService sessions, LanDiscoveryService discovery) : ControllerBase
     {
         [HttpPost("start")]
         public async Task<IActionResult> Start([FromBody] StartPairingRequest request, CancellationToken cancellationToken)
@@ -90,6 +90,49 @@ namespace RemoteLink.Host.Controllers
             catch (TaskCanceledException)
             {
                 return StatusCode(504, "Pairing verification timed out.");
+            }
+        }
+        
+        [HttpPost("start-discovered/{deviceId:guid}")]
+        public async Task<IActionResult> StartDiscovered(Guid deviceId, CancellationToken cancellationToken)
+        {
+            if (HttpContext.Connection.LocalPort != 5017 || HttpContext.Connection.RemoteIpAddress is not { } remoteIp || !IPAddress.IsLoopback(remoteIp))
+            {
+                return NotFound();
+            }
+
+            DiscoveredDevice? device = discovery.GetDevices().FirstOrDefault(item => item.Id == deviceId && item.IsOnline);
+
+            if (device is null)
+            {
+                return NotFound("The selected device is no longer available.");
+            }
+
+            try
+            {
+                PairingHandshakeVerification verification = await client.StartDiscoveredPairingAsync(device.Id, device.IpAddress, cancellationToken);
+
+                return Ok(verification);
+            }
+            catch (ArgumentException exception)
+            {
+                return BadRequest(exception.Message);
+            }
+            catch (CryptographicException exception)
+            {
+                return StatusCode(422, exception.Message);
+            }
+            catch (HttpRequestException exception)
+            {
+                return StatusCode(502, $"Unable to contact remote Host: {exception.Message}");
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Conflict(exception.Message);
+            }
+            catch (OperationCanceledException)when (!cancellationToken.IsCancellationRequested)
+            {
+                return StatusCode(504, "The remote Host did not respond in time.");
             }
         }
     }
