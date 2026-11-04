@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Sockets;
 using System.Security.Cryptography;
 using RemoteLink.Core.Models;
 using RemoteLink.Core.Models.Pairing;
@@ -339,6 +340,8 @@ namespace RemoteLink.Host.Services
                 {
                     throw new CryptographicException("The responder identity changed during pairing.");
                 }
+                
+                await ConfirmInitiatorAsync(proposal.RequestId, remoteDeviceId, remoteAddress, observedThumbprint, verification.RemoteIdentityFingerprint, cancellationToken);
 
                 return verification;
             }
@@ -348,6 +351,95 @@ namespace RemoteLink.Host.Services
                 
                 throw;
             }
+        }
+
+        public async Task ConfirmInitiatorAsync(Guid requestId, Guid expectedRemoteDeviceId, string remoteAddress, string expectedTlsThumbprint, string expectedRemoteIdentityFingerprint, CancellationToken cancellationToken)
+        {
+            if (requestId == Guid.Empty || expectedRemoteDeviceId == Guid.Empty || expectedRemoteDeviceId == identity.DeviceId)
+            {
+                throw new ArgumentException("Invalid pairing identifiers.");
+            }
+            
+            if (!IPAddress.TryParse(remoteAddress, out IPAddress? address) || address.AddressFamily != AddressFamily.InterNetwork || IPAddress.IsLoopback(address) || address.Equals(IPAddress.Any) || address.Equals(IPAddress.Broadcast))
+            {
+                throw new ArgumentException("Invalid remote LAN address.");
+            }
+            
+            PairingCryptoSessionInfo? session = cryptoSessions.GetSession(requestId);
+            
+            if (session is null || session.Role != PairingCryptoRole.Initiator || session.RemoteDeviceId != expectedRemoteDeviceId || session.RemoteEphemeralPublicKey is null)
+            {
+                throw new InvalidOperationException("No verified initiator session is available.");
+            }
+            
+            DeviceSecurityIdentity localIdentity = security.GetPublicIdentity();
+
+            byte[] initiatorIdentityKey = Convert.FromBase64String(localIdentity.PublicKey);
+            
+            string thumbprint = expectedTlsThumbprint.Replace(" ", "").Replace(":", "").ToUpperInvariant();
+
+            if (thumbprint.Length != 40 || !thumbprint.All(Uri.IsHexDigit))
+            {
+                throw new ArgumentException("Invalid TLS certificate thumbprint.");
+            }
+
+            byte[] expectedCertificateHash = Convert.FromHexString(thumbprint);
+            
+            using HttpClientHandler handler = new();
+            
+            handler.ServerCertificateCustomValidationCallback = (_, certificate, _, _) => certificate is not null && CryptographicOperations.FixedTimeEquals(certificate.GetCertHash(), expectedCertificateHash);
+
+            using HttpClient client = new(handler)
+            {
+                Timeout = TimeSpan.FromSeconds(10)
+            };
+            
+            Uri identityEndpoint = new($"https://{address}:5019/api/lan/identity");
+
+            DeviceSecurityIdentity? responderIdentity = await client.GetFromJsonAsync<DeviceSecurityIdentity>(identityEndpoint, cancellationToken);
+            
+            if (responderIdentity is null || responderIdentity.DeviceId != expectedRemoteDeviceId || !pairingSecurity.IsValidIdentityPublicKey(responderIdentity.PublicKey))
+            {
+                throw new CryptographicException("The responder identity is invalid.");
+            }
+
+            byte[] responderIdentityKey = Convert.FromBase64String(responderIdentity.PublicKey);
+            
+            byte[] actualFingerprint = SHA256.HashData(responderIdentityKey);
+
+            byte[] expectedFingerprint;
+
+            try
+            {
+                expectedFingerprint = Convert.FromHexString(expectedRemoteIdentityFingerprint);
+            }
+            catch (FormatException exception)
+            {
+                throw new CryptographicException("The expected responder fingerprint is invalid.", exception);
+            }
+            
+            if (!CryptographicOperations.FixedTimeEquals(actualFingerprint, expectedFingerprint))
+            {
+                throw new CryptographicException("The responder identity changed during pairing confirmation.");
+            }
+            
+            if (!cryptoSessions.TryCreateTranscript(requestId, identity.DeviceId, expectedRemoteDeviceId, initiatorIdentityKey, responderIdentityKey, pairingSecurity, out byte[] transcriptHash))
+            {
+                throw new InvalidOperationException("Unable to reconstruct the initiator transcript.");
+            }
+            
+            SignedPairingMessage signedMessage = pairingSecurity.CreateSignedMessage(requestId, identity.DeviceId, initiatorIdentityKey, session.LocalEphemeralPublicKey, transcriptHash, security);
+
+            PairingInitiatorConfirmation confirmation = new()
+            {
+                SignedMessage = signedMessage
+            };
+
+            Uri endpoint = new($"https://{address}:5019/api/lan/pairing/confirm-initiator/{requestId:D}");
+            
+            using HttpResponseMessage response = await client.PostAsJsonAsync(endpoint, confirmation, cancellationToken);
+            
+            response.EnsureSuccessStatusCode();
         }
     }
 }

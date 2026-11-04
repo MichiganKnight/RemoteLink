@@ -146,9 +146,9 @@ namespace RemoteLink.Host.Controllers
             
             PairingRequest? request = sessions.GetRequest(requestId);
 
-            if (request is null || request.Status != PairingStatus.Pending || request.ExpiresUtc <= DateTime.UtcNow)
+            if (request is null || request.Status != PairingStatus.AwaitingConfirmation || request.ExpiresUtc <= DateTime.UtcNow)
             {
-                return NotFound("No active pairing request exists.");
+                return NotFound("No authenticated pairing request is awaiting confirmation.");
             }
             
             PairingCryptoSessionInfo? session = cryptoSessions.GetSession(requestId);

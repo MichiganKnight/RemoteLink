@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { IncomingPairingRequest, PairingLocalVerification } from "../types/electron";
 
 const PAIRING_STATUS_PENDING = 0;
+const PAIRING_STATUS_AWAITING_CONFIRMATION = 1;
 
 export default function IncomingPairingRequests() {
     const [requests, setRequests] = useState<IncomingPairingRequest[]>([]);
@@ -27,7 +28,7 @@ export default function IncomingPairingRequests() {
                 if (active) {
                     setRequests(result);
 
-                    const pending = result.filter(request => request.status === PAIRING_STATUS_PENDING && new Date(request.expiresUtc).getTime() > Date.now());
+                    const pending = result.filter(request => (request.status === PAIRING_STATUS_PENDING || request.status === PAIRING_STATUS_AWAITING_CONFIRMATION) && new Date(request.expiresUtc).getTime() > Date.now());
 
                     const results = await Promise.allSettled(pending.map(request => window.remoteLink.getLocalPairingVerification(request.requestId)));
 
@@ -71,7 +72,7 @@ export default function IncomingPairingRequests() {
         };
     }, []);
 
-    const pendingRequests = requests.filter(request => request.status === PAIRING_STATUS_PENDING && new Date(request.expiresUtc).getTime() > Date.now());
+    const pendingRequests = requests.filter(request => (request.status === PAIRING_STATUS_PENDING || request.status === PAIRING_STATUS_AWAITING_CONFIRMATION) && new Date(request.expiresUtc).getTime() > Date.now());
 
     return (
         <section className="mb-5">
@@ -134,8 +135,8 @@ export default function IncomingPairingRequests() {
                                                 {request.deviceName}
                                             </h6>
 
-                                            <span className="badge text-bg-warning">
-                                                Pending
+                                            <span className={`badge ${request.status === PAIRING_STATUS_AWAITING_CONFIRMATION ? "text-bg-info" : "text-bg-warning"}`}>
+                                                {request.status === PAIRING_STATUS_AWAITING_CONFIRMATION ? "Awaiting Confirmation" : "Pending Authentication"}
                                             </span>
                                         </div>
 

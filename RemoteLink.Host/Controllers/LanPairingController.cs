@@ -147,5 +147,79 @@ namespace RemoteLink.Host.Controllers
                 SignedMessage = signedMessage
             });
         }
+
+        [HttpPost("confirm-initiator/{requestId:guid}")]
+        [RequestSizeLimit(4096)]
+        public IActionResult ConfirmInitiator(Guid requestId, [FromBody] PairingInitiatorConfirmation confirmation)
+        {
+            if (HttpContext.Connection.LocalPort != 5019)
+            {
+                return NotFound();
+            }
+            
+            PairingRequest? request = sessions.GetRequest(requestId);
+
+            if (request is null || request.Status != PairingStatus.Pending || request.ExpiresUtc <= DateTime.UtcNow)
+            {
+                return NotFound("No pending pairing request exists.");
+            }
+
+            PairingCryptoSessionInfo? session = cryptoSessions.GetSession(requestId);
+
+            if (session is null || session.Role != PairingCryptoRole.Responder || session.RemoteDeviceId != request.DeviceId || session.RemoteEphemeralPublicKey is null)
+            {
+                return Conflict("The responder pairing session is unavailable.");
+            }
+
+            SignedPairingMessage? signed = confirmation?.SignedMessage;
+
+            if (signed is null || signed.RequestId != requestId || signed.DeviceId != request.DeviceId)
+            {
+                return BadRequest("Invalid initiator confirmation.");
+            }
+
+            try
+            {
+                byte[] initiatorIdentityKey = Convert.FromBase64String(request.PublicKey);
+
+                byte[] responderIdentityKey = Convert.FromBase64String(deviceSecurity.GetPublicIdentity().PublicKey);
+
+                if (!cryptoSessions.TryCreateTranscript(requestId, request.DeviceId, localIdentity.DeviceId, initiatorIdentityKey, responderIdentityKey, security, out byte[] expectedTranscriptHash))
+                {
+                    return Conflict("Unable to reconstruct the pairing transcript.");
+                }
+
+                bool signatureVerified = security.VerifySignedMessage(signed, initiatorIdentityKey, session.RemoteEphemeralPublicKey, expectedTranscriptHash, requestId, request.DeviceId);
+
+                if (!signatureVerified)
+                {
+                    sessions.TryUpdateStatus(requestId, PairingStatus.Pending, PairingStatus.Failed);
+
+                    cryptoSessions.RemoveSession(requestId);
+
+                    return UnprocessableEntity("The initiator signature or transcript is invalid.");
+                }
+
+                if (!sessions.TryUpdateStatus(requestId, PairingStatus.Pending, PairingStatus.AwaitingConfirmation))
+                {
+                    return Conflict("The pairing request is no longer pending.");
+                }
+
+                return Ok(new
+                {
+                    requestId,
+                    initiatorAuthenticated = true,
+                    awaitingConfirmation = true
+                });
+            }
+            catch (Exception exception) when (exception is FormatException or CryptographicException or ArgumentException)
+            {
+                sessions.TryUpdateStatus(requestId, PairingStatus.Pending, PairingStatus.Failed);
+                
+                cryptoSessions.RemoveSession(requestId);
+                
+                return UnprocessableEntity("The initiator confirmation could not be verified.");
+            }
+        }
     }
 }
