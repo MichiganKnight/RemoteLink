@@ -175,6 +175,74 @@ function registerIpcHandlers() {
         return await response.json();
     });
 
+    const pairingGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    async function pairingApi(path, method = "GET", payload) {
+        const response = await fetch(`${HOST_URL}/api/local/pairing/${path}`, {
+            method,
+            signal: AbortSignal.timeout(12000),
+            headers: {
+                Accept: "application/json",
+                ...(payload ? {
+                    "Content-Type": "application/json"
+                } : {})
+            },
+            ...(payload ? { body: JSON.stringify(payload) } : {})
+        });
+
+        if (!response.ok) {
+            throw new Error(`Pairing request failed (${response.status}): ${await response.text()}`);
+        }
+
+        return response.json();
+    }
+
+    ipcMain.handle("pairing:trusted", () => pairingApi("trusted"));
+
+    ipcMain.handle("pairing:incoming-decision", (_event, requestId, approved) => {
+        if (!pairingGuid.test(requestId) || typeof approved !== "boolean") {
+            throw new Error("Invalid pairing decision");
+        }
+
+        return pairingApi("incoming/decision", "POST", {
+            requestId, approved
+        });
+    });
+
+    ipcMain.handle("pairing:outgoing-decision", (_event, requestId, approved) => {
+        if (!pairingGuid.test(requestId) || typeof approved !== "boolean") {
+            throw new Error("Invalid pairing decision");
+        }
+
+        return pairingApi("outgoing/decision", "POST", {
+            requestId, approved
+        });
+    });
+
+    ipcMain.handle("pairing:incoming-status", (_event, requestId) => {
+        if (!pairingGuid.test(requestId)) {
+            throw new Error("Invalid request ID");
+        }
+
+        return pairingApi(`incoming/${requestId}/decision`);
+    });
+
+    ipcMain.handle("pairing:outgoing-status", (_event, requestId) => {
+        if (!pairingGuid.test(requestId)) {
+            throw new Error("Invalid request ID");
+        }
+
+        return pairingApi(`outgoing/${requestId}/decision`);
+    });
+
+    ipcMain.handle("pairing:finalize", (_event, requestId) => {
+        if (!pairingGuid.test(requestId)) {
+            throw new Error("Invalid request ID");
+        }
+
+        return pairingApi(`outgoing/${requestId}/finalize`, "POST");
+    });
+
     ipcMain.handle("pairing:get-local-verification", async (_event, requestId) => {
         if (typeof requestId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestId)) {
             throw new Error("Invalid pairing request ID.");
