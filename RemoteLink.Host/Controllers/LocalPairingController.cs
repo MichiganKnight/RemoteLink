@@ -9,7 +9,7 @@ namespace RemoteLink.Host.Controllers
 {
     [ApiController]
     [Route("api/local/pairing")]
-    public class LocalPairingController(PairingClientService client, PairingSessionService sessions, LanDiscoveryService discovery, PairingCryptoSessionService cryptoSessions, PairingSecurityService pairingSecurity, DeviceIdentityService identity, DeviceSecurityService deviceSecurity, PairingApprovalService approvals) : ControllerBase
+    public class LocalPairingController(PairingClientService client, PairingSessionService sessions, LanDiscoveryService discovery, PairingCryptoSessionService cryptoSessions, PairingSecurityService pairingSecurity, DeviceIdentityService identity, DeviceSecurityService deviceSecurity, PairingApprovalService approvals, TrustedDeviceService trustedDevices) : ControllerBase
     {
         [HttpPost("start")]
         public async Task<IActionResult> Start([FromBody] StartPairingRequest request, CancellationToken cancellationToken)
@@ -281,6 +281,72 @@ namespace RemoteLink.Host.Controllers
             {
                 return StatusCode(504, "The responder did not reply in time.");
             }
+        }
+
+        [HttpPost("outgoing/decision")]
+        public async Task<IActionResult> DecideOutgoing([FromBody] LocalPairingDecisionRequest request, CancellationToken cancellationToken)
+        {
+            if (HttpContext.Connection.LocalPort != 5017 || HttpContext.Connection.RemoteIpAddress is not { } ip || !IPAddress.IsLoopback(ip))
+            {
+                return NotFound();
+            }
+
+            try
+            {
+                return Ok(await client.SendStoredDecisionAsync(request, cancellationToken));
+            }
+            catch (InvalidOperationException e)
+            {
+                return Conflict(e.Message);
+            }
+            catch (Exception e) when (e is HttpRequestException or CryptographicException or TaskCanceledException)
+            {
+                return StatusCode(502, e.Message);
+            }
+        }
+
+        [HttpPost("outgoing/{requestId:guid}/finalize")]
+        public async Task<IActionResult> FinalizeOutgoing(Guid requestId, CancellationToken cancellationToken)
+        {
+            if (HttpContext.Connection.LocalPort != 5017 || HttpContext.Connection.RemoteIpAddress is not { } ip || !IPAddress.IsLoopback(ip))
+            {
+                return NotFound();
+            }
+
+            try
+            {
+                return Ok(await client.FinalizePairingAsync(requestId, cancellationToken));
+            }
+            catch (InvalidOperationException e)
+            {
+                return Conflict(e.Message);
+            }
+            catch (Exception e) when (e is HttpRequestException or CryptographicException or TaskCanceledException)
+            {
+                return StatusCode(502, e.Message);
+            }
+        }
+
+        [HttpGet("trusted")]
+        public IActionResult GetTrustedDevices()
+        {
+            if (HttpContext.Connection.LocalPort != 5017 || HttpContext.Connection.RemoteIpAddress is not { } ip || !IPAddress.IsLoopback(ip))
+            {
+                return NotFound();
+            }
+
+            return Ok(trustedDevices.GetDevices());
+        }
+
+        [HttpGet("incoming/{requestId:guid}/decision")]
+        public IActionResult GetIncomingDecision(Guid requestId)
+        {
+            if (HttpContext.Connection.LocalPort != 5017 || HttpContext.Connection.RemoteIpAddress is not { } ip || !IPAddress.IsLoopback(ip))
+            {
+                return NotFound();
+            }
+
+            return approvals.GetState(requestId) is { } state ? Ok(state) : NotFound();
         }
     }
 }
