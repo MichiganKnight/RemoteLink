@@ -49,7 +49,12 @@ namespace RemoteLink.Host.Services
 
             using HttpResponseMessage response = await _client.SendAsync(request, cancellationToken);
 
-            response.EnsureSuccessStatusCode();
+            if (!response.IsSuccessStatusCode)
+            {
+                string errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
+
+                throw new HttpRequestException($"Remote chat delivery failed. HTTP {(int)response.StatusCode} ({response.ReasonPhrase}). Response: {errorBody}");
+            }
 
             ChatDeliveryAcknowledgment acknowledgment = await response.Content.ReadFromJsonAsync<ChatDeliveryAcknowledgment>(cancellationToken: cancellationToken) ?? throw new CryptographicException("Missing message acknowledgment.");
 

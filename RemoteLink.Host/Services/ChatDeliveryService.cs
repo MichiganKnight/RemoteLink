@@ -19,7 +19,7 @@ namespace RemoteLink.Host.Services
                 SenderDeviceId = message.SenderDeviceId,
                 RecipientDeviceId = message.RecipientDeviceId,
                 Content = message.Content,
-                CreatedUtc = message.CreatedUtc
+                CreatedUtc = DateTime.SpecifyKind(message.CreatedUtc, DateTimeKind.Utc)
             };
 
             ChatDeliveryAcknowledgment acknowledgment = await connection.SendMessageAsync(request, cancellationToken);

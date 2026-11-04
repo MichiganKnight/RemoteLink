@@ -333,11 +333,21 @@ namespace RemoteLink.Host.Services
                 Content = message.Content,
                 Direction = message.Direction,
                 Status = message.Status,
-                CreatedUtc = message.CreatedUtc,
-                SentUtc = message.SentUtc,
-                DeliveredUtc = message.DeliveredUtc,
-                ReadUtc = message.ReadUtc
+                CreatedUtc = AsUtc(message.CreatedUtc),
+                SentUtc = AsUtc(message.SentUtc),
+                DeliveredUtc = AsUtc(message.DeliveredUtc),
+                ReadUtc = AsUtc(message.ReadUtc)
             };
+        }
+
+        private static DateTime AsUtc(DateTime value)
+        {
+            return DateTime.SpecifyKind(value, DateTimeKind.Utc);
+        }
+
+        private static DateTime? AsUtc(DateTime? value)
+        {
+            return value.HasValue ? DateTime.SpecifyKind(value.Value, DateTimeKind.Utc) : null;
         }
     }
 }

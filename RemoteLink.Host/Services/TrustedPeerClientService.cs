@@ -91,7 +91,12 @@ namespace RemoteLink.Host.Services
 
                 using HttpResponseMessage challengeHttpResponse = await client.PostAsJsonAsync($"{baseUrl}/challenge", challengeRequest, cancellationToken);
 
-                challengeHttpResponse.EnsureSuccessStatusCode();
+                if (!challengeHttpResponse.IsSuccessStatusCode)
+                {
+                    string errorBody = await challengeHttpResponse.Content.ReadAsStringAsync(cancellationToken);
+
+                    throw new HttpRequestException($"Peer authentication challenge failed. HTTP {(int)challengeHttpResponse.StatusCode}. Response: {errorBody}");
+                }
 
                 PeerChallengeResponse challenge = await challengeHttpResponse.Content.ReadFromJsonAsync<PeerChallengeResponse>(cancellationToken: cancellationToken) ??
                                                   throw new CryptographicException("The remote Host returned no authentication challenge.");
@@ -160,7 +165,12 @@ namespace RemoteLink.Host.Services
 
                 using HttpResponseMessage authenticationHttpResponse = await client.PostAsJsonAsync($"{baseUrl}/complete", authenticationRequest, cancellationToken);
 
-                authenticationHttpResponse.EnsureSuccessStatusCode();
+                if (!authenticationHttpResponse.IsSuccessStatusCode)
+                {
+                    string errorBody = await authenticationHttpResponse.Content.ReadAsStringAsync(cancellationToken);
+
+                    throw new HttpRequestException($"Peer authentication completion failed. HTTP {(int)authenticationHttpResponse.StatusCode}. Response: {errorBody}");
+                }
 
                 PeerAuthenticationResponse session = await authenticationHttpResponse.Content.ReadFromJsonAsync<PeerAuthenticationResponse>(cancellationToken: cancellationToken) ??
                                                      throw new CryptographicException("The remote Host returned no authenticated session.");
