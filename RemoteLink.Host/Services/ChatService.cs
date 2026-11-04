@@ -347,9 +347,9 @@ namespace RemoteLink.Host.Services
                 Id = conversation.Id,
                 RemoteDeviceId = conversation.RemoteDeviceId,
                 RemoteDeviceName = trustedDevices.GetDevice(conversation.RemoteDeviceId)?.DeviceName ?? "Unknown Device",
-                CreatedUtc = conversation.CreatedUtc,
-                LastMessageUtc = conversation.LastMessageUtc,
-                LastReadUtc = conversation.LastReadUtc,
+                CreatedUtc = AsUtc(conversation.CreatedUtc),
+                LastMessageUtc = AsUtc(conversation.LastMessageUtc),
+                LastReadUtc = AsUtc(conversation.LastReadUtc),
                 LastMessagePreview = latest is null ? null : latest.Content.Length > 100 ? latest.Content[..100] + "..." : latest.Content,
                 UnreadCount = unread
             };
