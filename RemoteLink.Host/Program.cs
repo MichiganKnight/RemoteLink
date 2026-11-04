@@ -32,6 +32,8 @@ namespace RemoteLink.Host
             builder.Services.AddSingleton<PairingDecisionSecurityService>();
             builder.Services.AddSingleton<PairingPeerContextService>();
             builder.Services.AddSingleton<TrustedDeviceService>();
+            builder.Services.AddSingleton<PeerAuthenticationService>();
+            builder.Services.AddSingleton<TrustedPeerClientService>();
 
             builder.Services.AddScoped<ChatService>();
 
@@ -63,6 +65,9 @@ namespace RemoteLink.Host
                     allowed |= context.Request.Method == HttpMethods.Post && context.Request.Path.StartsWithSegments("/api/lan/pairing/decision", StringComparison.OrdinalIgnoreCase);
                     allowed |= context.Request.Method == HttpMethods.Get && context.Request.Path.StartsWithSegments("/api/lan/pairing/decision", StringComparison.OrdinalIgnoreCase);
                     allowed |= context.Request.Method == HttpMethods.Post && context.Request.Path.StartsWithSegments("/api/lan/pairing/finalize", StringComparison.OrdinalIgnoreCase);
+                    
+                    allowed |= context.Request.Method == HttpMethods.Post && context.Request.Path.Equals("/api/lan/auth/challenge", StringComparison.OrdinalIgnoreCase);
+                    allowed |= context.Request.Method == HttpMethods.Post && context.Request.Path.Equals("/api/lan/auth/complete", StringComparison.OrdinalIgnoreCase);
 
                     if (!allowed)
                     {
