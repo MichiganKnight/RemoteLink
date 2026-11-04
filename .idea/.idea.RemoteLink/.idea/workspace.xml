@@ -194,7 +194,7 @@
     &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;
   }
 }</component>
-  <component name="RunManager" selected=".NET Launch Settings Profile.RemoteLink.Host">
+  <component name="RunManager" selected="Publish to folder.Publish Host">
     <configuration name="Publish Host" type="DotNetFolderPublish" factoryName="Publish to folder">
       <riderPublish configuration="Release" platform="Any CPU" produce_single_file="true" self_contained="true" target_folder="$PROJECT_DIR$/Artifacts/Host" target_framework="net10.0" uuid_high="-7830479812831787127" uuid_low="-6643067045281006256">
         <runtimes>

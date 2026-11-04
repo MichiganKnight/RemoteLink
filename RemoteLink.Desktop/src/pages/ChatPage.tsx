@@ -294,7 +294,7 @@ export default function ChatPage() {
 
                             return (
                                 <button key={device.deviceId} type="button" className={`chat-conversation-item text-start ${selectedDeviceId === device.deviceId ? "active" : ""}`} onClick={() => void selectDevice(device.deviceId)}>
-                                    <div className="d-flex align-items-center gap-2">
+                                    <div className="d-flex align-items-center gap-2 text-secondary">
                                         <i className="bi bi-pc-display" />
 
                                         <strong className="text-truncate flex-grow-1">
