@@ -7,6 +7,27 @@ const PAIRING_STATUS_AWAITING_CONFIRMATION = 1;
 export default function IncomingPairingRequests() {
     const [requests, setRequests] = useState<IncomingPairingRequest[]>([]);
     const [loading, setLoading] = useState(true);
+    const [decisions, setDecisions] = useState<Record<string, number>>({});
+    const [busy, setBusy] = useState<string | null>(null);
+
+    async function decide(requestId: string, approved: boolean) {
+        setBusy(requestId); setError(null);
+
+        try {
+            const state = await window.remoteLink.decideIncomingPairing(requestId, approved);
+
+            setDecisions(previous => ({
+                ...previous, [requestId]: state.localDecision
+            }));
+        } catch (e){
+            setError(e instanceof Error ? e.message : "Decision failed");
+        }
+
+        finally {
+            setBusy(null);
+        }
+    }
+
     const [error, setError] = useState<string | null>(null);
 
     const [verifications, setVerifications] = useState<Record<string, PairingLocalVerification>>({});
@@ -27,6 +48,24 @@ export default function IncomingPairingRequests() {
 
                 if (active) {
                     setRequests(result);
+
+                    const states = await Promise.allSettled(result.filter(r => r.status === 1).map(r => window.remoteLink.getIncomingDecision(r.requestId)));
+
+                    const activeRequests = result.filter(r => r.status === 1);
+
+                    setDecisions(previous => {
+                        const next = {
+                            ...previous
+                        };
+
+                        states.forEach((state, i) => {
+                            if (state.status === "fulfilled") {
+                                next[activeRequests[i].requestId] = state.value.localDecision;
+                            }
+                        });
+
+                        return next;
+                    });
 
                     const pending = result.filter(request => (request.status === PAIRING_STATUS_PENDING || request.status === PAIRING_STATUS_AWAITING_CONFIRMATION) && new Date(request.expiresUtc).getTime() > Date.now());
 
@@ -161,12 +200,12 @@ export default function IncomingPairingRequests() {
                                         </div>
 
                                         <div className="d-flex gap-2 mt-3">
-                                            <button type="button" className="btn btn-primary btn-sm" disabled>
+                                            <button type="button" className="btn btn-primary btn-sm" disabled={request.status !== 1 || busy === request.requestId || (decisions[request.requestId] ?? 0) !== 0} onClick={() => void decide(request.requestId, true)}>
                                                 <i className="bi bi-check-lg me-2"/>
                                                 Approve
                                             </button>
 
-                                            <button type="button" className="btn btn-outline-secondary btn-sm" disabled>
+                                            <button type="button" className="btn btn-outline-secondary btn-sm" disabled={request.status !== 1 || busy === request.requestId || (decisions[request.requestId] ?? 0) !== 0} onClick={() => void decide(request.requestId, false)}>
                                                 <i className="bi bi-x-lg me-2"/>
                                                 Reject
                                             </button>
@@ -196,8 +235,7 @@ export default function IncomingPairingRequests() {
                                         )}
 
                                         <div className="small text-secondary mt-3">
-                                            Approval will be enabled after secure
-                                            identity verification is implemented.
+                                            {decisions[request.requestId] === 1 ? "You approved. Waiting for the other computer to complete pairing." : decisions[request.requestId] === 2 ? "You rejected this request." : "Approve only if the six-digit code matches on both computers."}
                                         </div>
                                     </div>
                                 </div>
