@@ -10,7 +10,7 @@ namespace RemoteLink.Host.Services
 
     public sealed class PairingCryptoSessionService : IDisposable
     {
-        private static readonly TimeSpan SessionLifetime = TimeSpan.FromMinutes(2);
+        private static readonly TimeSpan SessionLifetime = TimeSpan.FromMinutes(10);
 
         private const int MaxSessions = 32;
 
