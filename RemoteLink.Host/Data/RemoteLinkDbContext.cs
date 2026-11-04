@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RemoteLink.Core.Models.Chat;
+using RemoteLink.Core.Models.Transfers;
 
 namespace RemoteLink.Host.Data
 {
@@ -8,6 +9,10 @@ namespace RemoteLink.Host.Data
         public DbSet<ChatConversation> ChatConversations => Set<ChatConversation>();
         
         public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+        
+        public DbSet<TransferJob> TransferJobs => Set<TransferJob>();
+
+        public DbSet<TransferItem> TransferItems => Set<TransferItem>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -55,6 +60,49 @@ namespace RemoteLink.Host.Data
                     message.Status,
                     message.CreatedUtc
                 });
+            });
+
+            modelBuilder.Entity<TransferJob>(entity =>
+            {
+                entity.HasKey(t => t.Id);
+                
+                entity.Property(t => t.Name).IsRequired()
+                    .HasMaxLength(255);
+
+                entity.Property(t => t.Direction).HasConversion<int>();
+
+                entity.Property(t => t.Status).HasConversion<int>();
+
+                entity.Property(t => t.ErrorMessage).HasMaxLength(2048);
+
+                entity.HasIndex(t => new
+                {
+                    t.RemoteDeviceId,
+                    t.CreatedUtc
+                });
+
+                entity.HasIndex(t => t.Status);
+
+                entity.HasMany(t => t.Items)
+                    .WithOne(i => i.Transfer)
+                    .HasForeignKey(i => i.TransferId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+            
+            modelBuilder.Entity<TransferItem>(entity =>
+            {
+                entity.HasKey(i => i.Id);
+
+                entity.Property(i => i.RelativePath).IsRequired()
+                    .HasMaxLength(2048);
+
+                entity.Property(i => i.Sha256).HasMaxLength(64);
+
+                entity.HasIndex(i => new
+                {
+                    i.TransferId,
+                    i.RelativePath
+                }).IsUnique();
             });
         }
     }

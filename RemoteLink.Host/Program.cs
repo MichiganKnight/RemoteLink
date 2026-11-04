@@ -47,6 +47,9 @@ namespace RemoteLink.Host
             builder.Services.AddHostedService<ChatDeliveryWorker>();
             
             builder.Services.AddSingleton<ChatNotificationService>();
+            
+            builder.Services.AddScoped<TransferService>();
+            builder.Services.AddScoped<TransferOfferService>();
 
             builder.Services.AddHostedService(provider => provider.GetRequiredService<LanDiscoveryService>());
             

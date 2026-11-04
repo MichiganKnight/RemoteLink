@@ -3,6 +3,8 @@ using System.Security.Cryptography;
 using RemoteLink.Core.Models.Authentication;
 using RemoteLink.Core.Models.Chat.Requests;
 using RemoteLink.Core.Models.Chat.Responses;
+using RemoteLink.Core.Models.Transfers.Requests;
+using RemoteLink.Core.Models.Transfers.Responses;
 
 namespace RemoteLink.Host.Services
 {
@@ -64,6 +66,36 @@ namespace RemoteLink.Host.Services
             }
 
             return acknowledgment;
+        }
+        
+        public async Task<TransferJobResponse> SendTransferOfferAsync(IncomingTransferRequest transfer, CancellationToken cancellationToken = default)
+        {
+            if (_session.ExpiresUtc <= DateTime.UtcNow)
+            {
+                throw new InvalidOperationException("Peer session has expired.");
+            }
+
+            Uri endpoint = new(_baseUri, "/api/lan/transfers/offers");
+
+            using HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+            {
+                Content = JsonContent.Create(transfer)
+            };
+
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _session.AccessToken);
+
+            using HttpResponseMessage response = await _client.SendAsync(request, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                string error = await response.Content.ReadAsStringAsync(cancellationToken);
+
+                throw new HttpRequestException($"Transfer offer failed ({(int)response.StatusCode}): {error}");
+            }
+
+            TransferJobResponse? result = await response.Content.ReadFromJsonAsync<TransferJobResponse>(cancellationToken: cancellationToken);
+
+            return result ?? throw new InvalidOperationException("Remote device returned an empty transfer response.");
         }
 
         public void Dispose()

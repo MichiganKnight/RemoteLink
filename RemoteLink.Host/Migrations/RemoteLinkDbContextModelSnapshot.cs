@@ -90,6 +90,89 @@ namespace RemoteLink.Host.Migrations
                     b.ToTable("ChatMessages", (string)null);
                 });
 
+            modelBuilder.Entity("RemoteLink.Core.Models.Transfers.TransferItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDirectory")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("RelativePath")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Sha256")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("TransferId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("TransferredBytes")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TransferId", "RelativePath")
+                        .IsUnique();
+
+                    b.ToTable("TransferItems");
+                });
+
+            modelBuilder.Entity("RemoteLink.Core.Models.Transfers.TransferJob", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("CompletedUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Direction")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(2048)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("RemoteDeviceId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("StartedUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("TotalBytes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("TransferredBytes")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("RemoteDeviceId", "CreatedUtc");
+
+                    b.ToTable("TransferJobs");
+                });
+
             modelBuilder.Entity("RemoteLink.Core.Models.Chat.ChatMessage", b =>
                 {
                     b.HasOne("RemoteLink.Core.Models.Chat.ChatConversation", "Conversation")
@@ -101,9 +184,25 @@ namespace RemoteLink.Host.Migrations
                     b.Navigation("Conversation");
                 });
 
+            modelBuilder.Entity("RemoteLink.Core.Models.Transfers.TransferItem", b =>
+                {
+                    b.HasOne("RemoteLink.Core.Models.Transfers.TransferJob", "Transfer")
+                        .WithMany("Items")
+                        .HasForeignKey("TransferId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Transfer");
+                });
+
             modelBuilder.Entity("RemoteLink.Core.Models.Chat.ChatConversation", b =>
                 {
                     b.Navigation("Messages");
+                });
+
+            modelBuilder.Entity("RemoteLink.Core.Models.Transfers.TransferJob", b =>
+                {
+                    b.Navigation("Items");
                 });
 #pragma warning restore 612, 618
         }
