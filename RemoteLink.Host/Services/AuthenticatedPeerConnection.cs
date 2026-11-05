@@ -128,25 +128,31 @@ namespace RemoteLink.Host.Services
             return result ?? throw new InvalidOperationException("Remote device returned an empty decision response.");
         }
         
-        public async Task SendTransferFileAsync(Guid transferId, Guid itemId, string sourcePath, CancellationToken cancellationToken = default)
+        public async Task<TransferFileAcknowledgment> SendTransferFileAsync(Guid transferId, Guid itemId, string sourcePath, Action<long>? onProgress = null, CancellationToken cancellationToken = default)
         {
             if (_session.ExpiresUtc <= DateTime.UtcNow)
             {
                 throw new InvalidOperationException("Peer session has expired.");
             }
-            
-            await using FileStream stream = new(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1024 * 1024, useAsync: true);
+
+            await using FileStream file = new(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1024 * 1024, useAsync: true);
+
+            long expectedLength = file.Length;
+
+            using TransferProgressStream progressStream = new(file, bytes => onProgress?.Invoke(bytes));
 
             Uri endpoint = new(_baseUri, $"/api/lan/transfers/{transferId}/items/{itemId}/content");
 
             using HttpRequestMessage request = new(HttpMethod.Put, endpoint)
             {
-                Content = new StreamContent(stream)
+                Content = new StreamContent(progressStream)
             };
 
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _session.AccessToken);
+
             request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-            request.Content.Headers.ContentLength = stream.Length;
+
+            request.Content.Headers.ContentLength = expectedLength;
 
             using HttpResponseMessage response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
@@ -156,6 +162,15 @@ namespace RemoteLink.Host.Services
 
                 throw new HttpRequestException($"File transfer failed ({(int)response.StatusCode}): {error}");
             }
+
+            TransferFileAcknowledgment acknowledgment = await response.Content.ReadFromJsonAsync<TransferFileAcknowledgment>(cancellationToken: cancellationToken) ?? throw new InvalidOperationException("Receiver returned an empty transfer acknowledgment.");
+
+            if (acknowledgment.TransferId != transferId || acknowledgment.ItemId != itemId || acknowledgment.ReceivedBytes != expectedLength || string.IsNullOrWhiteSpace(acknowledgment.Sha256))
+            {
+                throw new InvalidOperationException("Receiver returned an invalid transfer acknowledgment.");
+            }
+
+            return acknowledgment;
         }
 
         public void Dispose()

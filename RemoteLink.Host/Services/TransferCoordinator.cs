@@ -8,6 +8,7 @@ namespace RemoteLink.Host.Services
     {
         private readonly HashSet<Guid> _activeTransfers = [];
         private readonly object _sync = new();
+        private static readonly TimeSpan ProgressInterval = TimeSpan.FromMilliseconds(500);
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -87,7 +88,7 @@ namespace RemoteLink.Host.Services
                 }
 
                 List<TransferItem> files = transfer.Items.Where(item => !item.IsDirectory).ToList();
-                
+
                 if (files.Count != 1 || transfer.Items.Count != 1)
                 {
                     logger.LogWarning("Transfer {TransferId} is not a single-file transfer.", transferId);
@@ -128,9 +129,56 @@ namespace RemoteLink.Host.Services
                 logger.LogInformation("Starting transfer {TransferId}: {FileName}", transfer.Id, item.RelativePath);
 
                 using AuthenticatedPeerConnection connection = await peerClient.ConnectAsync(transfer.RemoteDeviceId, address, cancellationToken);
-
-                await connection.SendTransferFileAsync(transfer.Id, item.Id, sourcePath, cancellationToken);
                 
+                string sourceHash = await TransferStorageService.CalculateSha256Async(sourcePath, cancellationToken);
+
+                long uploadedBytes = 0;
+
+                using CancellationTokenSource progressCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                
+                Task progressTask = Task.Run(async () =>
+                {
+                    using PeriodicTimer progressTimer = new(ProgressInterval);
+
+                    try
+                    {
+                        while (await progressTimer.WaitForNextTickAsync(progressCancellation.Token))
+                        {
+                            long bytes = Interlocked.Read(ref uploadedBytes);
+
+                            await SaveProgressAsync(transfer.Id, item.Id, bytes, progressCancellation.Token);
+                        }
+                    }
+                    catch (OperationCanceledException)when (progressCancellation.IsCancellationRequested)
+                    {
+                        // Expected when the upload finishes or is interrupted.
+                    }
+                }, CancellationToken.None);
+
+                TransferFileAcknowledgment acknowledgment;
+
+                try
+                {
+                    acknowledgment = await connection.SendTransferFileAsync(transfer.Id, item.Id, sourcePath, bytes => Interlocked.Exchange(ref uploadedBytes, bytes), cancellationToken);
+                }
+                finally
+                {
+                    await progressCancellation.CancelAsync();
+                    await progressTask;
+                }
+
+                if (!string.Equals(sourceHash, acknowledgment.Sha256, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidDataException("SHA-256 verification failed. The received file does not match the source.");
+                }
+
+                if (!acknowledgment.Completed)
+                {
+                    throw new InvalidOperationException("Receiver did not confirm transfer completion.");
+                }
+
+                item.Sha256 = sourceHash;
+
                 item.TransferredBytes = item.SizeBytes;
                 transfer.TransferredBytes = item.SizeBytes;
                 transfer.Status = TransferStatus.Completed;
@@ -185,6 +233,19 @@ namespace RemoteLink.Host.Services
             transfer.ErrorMessage = exception.Message.Length > 2048 ? exception.Message[..2048] : exception.Message;
 
             await database.SaveChangesAsync();
+        }
+        
+        private async Task SaveProgressAsync(Guid transferId, Guid itemId, long bytes, CancellationToken cancellationToken)
+        {
+            await using AsyncServiceScope scope = scopeFactory.CreateAsyncScope();
+
+            RemoteLinkDbContext database = scope.ServiceProvider.GetRequiredService<RemoteLinkDbContext>();
+            
+            await database.TransferJobs.Where(t => t.Id == transferId && t.Status == TransferStatus.Transferring)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(t => t.TransferredBytes, bytes), cancellationToken);
+
+            await database.Set<TransferItem>().Where(i => i.Id == itemId)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(i => i.TransferredBytes, bytes), cancellationToken);
         }
     }
 }
