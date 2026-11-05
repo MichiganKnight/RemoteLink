@@ -75,7 +75,7 @@ namespace RemoteLink.Host.Services
 
             HttpClient client = new(handler)
             {
-                Timeout = TimeSpan.FromSeconds(10)
+                Timeout = Timeout.InfiniteTimeSpan
             };
 
             try
