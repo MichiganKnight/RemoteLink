@@ -118,7 +118,9 @@ export default function TransfersPage() {
     }
 
     async function sendFile() {
-        if (!recipientId || !selectedFile || sending) return;
+        if (!recipientId || !selectedFile || sending) {
+            return;
+        }
 
         setSending(true);
         setError(null);

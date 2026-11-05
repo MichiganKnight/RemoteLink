@@ -471,7 +471,7 @@ function registerIpcHandlers() {
     });
 
 
-    const transferGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const transferGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
     ipcMain.handle("transfers:select-file", async () => {
         const window = BrowserWindow.getFocusedWindow();
