@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("node:path");
 
 const { HOST_URL, startHost, stopHost } = require("./services/hostManager.cjs");
@@ -468,6 +468,84 @@ function registerIpcHandlers() {
         }
 
         return chatApi(`conversations/${deviceId}/read`, "POST");
+    });
+
+
+    const transferGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    ipcMain.handle("transfers:select-file", async () => {
+        const window = BrowserWindow.getFocusedWindow();
+
+        const options = {
+            title: "Select File to Transfer",
+            properties: ["openFile"]
+        };
+
+        const result = window ? await dialog.showOpenDialog(window, options) : await dialog.showOpenDialog(options);
+
+        return result.canceled ? null : result.filePaths[0] ?? null;
+    });
+
+    ipcMain.handle("transfers:get-all", async () => {
+        const response = await fetch(`${HOST_URL}/api/local/transfers`, {
+            signal: AbortSignal.timeout(15000)
+        });
+
+        if (!response.ok) {
+            throw new Error(`Unable to load transfers (${response.status}): ${await response.text()}`);
+        }
+
+        return response.json();
+    });
+
+    ipcMain.handle("transfers:send-file", async (_event, deviceId, sourcePath) => {
+        if (typeof deviceId !== "string" || !transferGuid.test(deviceId)) {
+            throw new Error("Invalid recipient device ID.");
+        }
+
+        if (typeof sourcePath !== "string" || !sourcePath.trim()) {
+            throw new Error("Invalid source file.");
+        }
+
+        const response = await fetch(`${HOST_URL}/api/local/transfers/files`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json"
+            },
+            body: JSON.stringify({
+                recipientDeviceId: deviceId,
+                sourcePath
+            }),
+            signal: AbortSignal.timeout(30000)
+        });
+
+        if (!response.ok) {
+            throw new Error(`Unable to create file transfer (${response.status}): ${await response.text()}`);
+        }
+
+        return response.json();
+    });
+
+    ipcMain.handle("transfers:decide", async (_event, transferId, accepted) => {
+        if (typeof transferId !== "string" || !transferGuid.test(transferId) || typeof accepted !== "boolean") {
+            throw new Error("Invalid transfer decision.");
+        }
+
+        const response = await fetch(`${HOST_URL}/api/local/transfers/${transferId}/decision`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ accepted }),
+            signal: AbortSignal.timeout(30000)
+        });
+
+        if (!response.ok) {
+            throw new Error(`Unable to decide transfer (${response.status}): ${await response.text()}`);
+        }
+
+        return response.json();
     });
 }
 

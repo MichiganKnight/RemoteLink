@@ -115,6 +115,34 @@ export interface ChatMessage {
     readUtc: string | null;
 }
 
+export type TransferStatus =
+    0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+
+export type TransferDirection = 0 | 1;
+
+export interface TransferItem {
+    id: string;
+    relativePath: string;
+    sizeBytes: number;
+    transferredBytes: number;
+    isDirectory: boolean;
+}
+
+export interface TransferJob {
+    id: string;
+    remoteDeviceId: string;
+    name: string;
+    direction: TransferDirection;
+    status: TransferStatus;
+    totalBytes: number;
+    transferredBytes: number;
+    createdUtc: string;
+    startedUtc: string | null;
+    completedUtc: string | null;
+    errorMessage: string | null;
+    items: TransferItem[];
+}
+
 declare global {
     interface Window {
         remoteLink: {
@@ -145,6 +173,14 @@ declare global {
             markRead: (deviceId: string) => Promise<{deviceId: string; markedRead: number;}>;
 
             onChatConversationChanged: (callback: (event: { deviceId: string }) => void ) => () => void;
+
+            selectTransferFile: () => Promise<string | null>;
+
+            getTransfers: () => Promise<TransferJob[]>;
+
+            sendTransferFile: (deviceId: string, sourcePath: string) => Promise<TransferJob>;
+
+            decideTransfer: (transferId: string, accepted: boolean) => Promise<TransferJob>;
         }
     }
 }

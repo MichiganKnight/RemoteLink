@@ -97,6 +97,66 @@ namespace RemoteLink.Host.Services
 
             return result ?? throw new InvalidOperationException("Remote device returned an empty transfer response.");
         }
+        
+        public async Task<TransferJobResponse> SendTransferDecisionAsync(TransferDecisionNotification notification, CancellationToken cancellationToken = default)
+        {
+            if (_session.ExpiresUtc <= DateTime.UtcNow)
+            {
+                throw new InvalidOperationException("Peer session has expired.");
+            }
+
+            Uri endpoint = new(_baseUri, $"/api/lan/transfers/{notification.TransferId}/decision");
+
+            using HttpRequestMessage request = new(HttpMethod.Post, endpoint)
+            {
+                Content = JsonContent.Create(notification)
+            };
+
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _session.AccessToken);
+
+            using HttpResponseMessage response = await _client.SendAsync(request, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                string error = await response.Content.ReadAsStringAsync(cancellationToken);
+
+                throw new HttpRequestException($"Transfer decision notification failed ({(int)response.StatusCode}): {error}");
+            }
+
+            TransferJobResponse? result = await response.Content.ReadFromJsonAsync<TransferJobResponse>(cancellationToken: cancellationToken);
+
+            return result ?? throw new InvalidOperationException("Remote device returned an empty decision response.");
+        }
+        
+        public async Task SendTransferFileAsync(Guid transferId, Guid itemId, string sourcePath, CancellationToken cancellationToken = default)
+        {
+            if (_session.ExpiresUtc <= DateTime.UtcNow)
+            {
+                throw new InvalidOperationException("Peer session has expired.");
+            }
+            
+            await using FileStream stream = new(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1024 * 1024, useAsync: true);
+
+            Uri endpoint = new(_baseUri, $"/api/lan/transfers/{transferId}/items/{itemId}/content");
+
+            using HttpRequestMessage request = new(HttpMethod.Put, endpoint)
+            {
+                Content = new StreamContent(stream)
+            };
+
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _session.AccessToken);
+            request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+            request.Content.Headers.ContentLength = stream.Length;
+
+            using HttpResponseMessage response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                string error = await response.Content.ReadAsStringAsync(cancellationToken);
+
+                throw new HttpRequestException($"File transfer failed ({(int)response.StatusCode}): {error}");
+            }
+        }
 
         public void Dispose()
         {

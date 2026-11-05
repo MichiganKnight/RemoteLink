@@ -7,7 +7,7 @@ namespace RemoteLink.Host.Controllers
 {
     [ApiController]
     [Route("api/local/transfers")]
-    public sealed class LocalTransferController(TransferService transfers, TransferOfferService offers) : ControllerBase
+    public sealed class LocalTransferController(TransferService transfers, TransferOfferService offers, TransferDecisionService decisions) : ControllerBase
     {
         [HttpGet]
         public async Task<IActionResult> GetTransfers(CancellationToken cancellationToken)
@@ -20,7 +20,7 @@ namespace RemoteLink.Host.Controllers
         {
             try
             {
-                return Ok(await transfers.DecideAsync(transferId, request.Accepted, cancellationToken));
+                return Ok(await decisions.DecideAndNotifyAsync(transferId, request.Accepted, cancellationToken));
             }
             catch (KeyNotFoundException)
             {
@@ -56,6 +56,37 @@ namespace RemoteLink.Host.Controllers
             catch (OverflowException)
             {
                 return BadRequest("Transfer size exceeds supported limits.");
+            }
+            catch (HttpRequestException exception)
+            {
+                return StatusCode(502, exception.Message);
+            }
+        }
+        
+        [HttpPost("files")]
+        public async Task<IActionResult> CreateFileOffer([FromBody] CreateLocalFileTransferRequest request, CancellationToken cancellationToken)
+        {
+            try
+            {
+                TransferJobResponse result = await offers.CreateFileOfferAsync(request, cancellationToken);
+
+                return Accepted(result);
+            }
+            catch (FileNotFoundException exception)
+            {
+                return NotFound(exception.Message);
+            }
+            catch (ArgumentException exception)
+            {
+                return BadRequest(exception.Message);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Conflict(exception.Message);
             }
             catch (HttpRequestException exception)
             {

@@ -5,7 +5,7 @@ using RemoteLink.Host.Data;
 
 namespace RemoteLink.Host.Services
 {
-    public sealed class TransferOfferService(RemoteLinkDbContext database, DeviceIdentityService identity, TrustedDeviceService trustedDevices, ChatPeerAddressResolver addresses, TrustedPeerClientService peerClient)
+    public sealed class TransferOfferService(RemoteLinkDbContext database, DeviceIdentityService identity, TrustedDeviceService trustedDevices, ChatPeerAddressResolver addresses, TrustedPeerClientService peerClient, TransferSourceRegistry sources)
     {
         public async Task<TransferJobResponse> CreateAndSendOfferAsync(CreateTransferOfferRequest request, CancellationToken cancellationToken = default)
         {
@@ -148,6 +148,51 @@ namespace RemoteLink.Host.Services
                     IsDirectory = item.IsDirectory
                 }).ToList()
             };
+        }
+        
+        public async Task<TransferJobResponse> CreateFileOfferAsync(CreateLocalFileTransferRequest request, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(request.SourcePath))
+            {
+                throw new ArgumentException("Source path is required.");
+            }
+
+            string fullPath = Path.GetFullPath(request.SourcePath);
+
+            FileInfo file = new(fullPath);
+
+            if (!file.Exists)
+            {
+                throw new FileNotFoundException("Selected file does not exist.", fullPath);
+            }
+
+            if ((file.Attributes & FileAttributes.ReparsePoint) != 0)
+            {
+                throw new ArgumentException("Symbolic links and reparse-point files are not supported.");
+            }
+
+            CreateTransferOfferRequest offer = new()
+            {
+                RecipientDeviceId = request.RecipientDeviceId,
+                Name = file.Name,
+                Items =
+                [
+                    new CreateTransferItemRequest
+                    {
+                        RelativePath = file.Name,
+                        SizeBytes = file.Length,
+                        IsDirectory = false
+                    }
+                ]
+            };
+
+            TransferJobResponse transfer = await CreateAndSendOfferAsync(offer, cancellationToken);
+
+            TransferItemResponse item = transfer.Items.Single();
+
+            sources.Register(item.Id, fullPath);
+
+            return transfer;
         }
     }
 }

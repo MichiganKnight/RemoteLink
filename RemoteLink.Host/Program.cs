@@ -50,6 +50,10 @@ namespace RemoteLink.Host
             
             builder.Services.AddScoped<TransferService>();
             builder.Services.AddScoped<TransferOfferService>();
+            builder.Services.AddScoped<TransferDecisionService>();
+            
+            builder.Services.AddSingleton<TransferStorageService>();
+            builder.Services.AddSingleton<TransferSourceRegistry>();
 
             builder.Services.AddHostedService(provider => provider.GetRequiredService<LanDiscoveryService>());
             
@@ -97,6 +101,8 @@ namespace RemoteLink.Host
                     allowed |= context.Request.Method == HttpMethods.Post && context.Request.Path.Equals("/api/lan/chat/messages", StringComparison.OrdinalIgnoreCase);
                     
                     allowed |= context.Request.Method == HttpMethods.Post && context.Request.Path.Equals("/api/lan/transfers/offers", StringComparison.OrdinalIgnoreCase);
+                    allowed |= context.Request.Method == HttpMethods.Post && context.Request.Path.StartsWithSegments("/api/lan/transfers", out PathString remainingPath) && remainingPath.Value?.EndsWith("/decision", StringComparison.OrdinalIgnoreCase) == true;
+                    allowed |= context.Request.Method == HttpMethods.Put && context.Request.Path.StartsWithSegments("/api/lan/transfers", StringComparison.OrdinalIgnoreCase) && context.Request.Path.Value?.EndsWith("/content", StringComparison.OrdinalIgnoreCase) == true;
 
                     if (!allowed)
                     {

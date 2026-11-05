@@ -117,8 +117,7 @@ namespace RemoteLink.Host.Services
             return ToResponse(transfer);
         }
         
-        public async Task<IReadOnlyList<TransferJobResponse>> GetTransfersAsync(
-            CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<TransferJobResponse>> GetTransfersAsync(CancellationToken cancellationToken = default)
         {
             List<TransferJob> transfers = await database.TransferJobs.AsNoTracking()
                 .Include(t => t.Items)
@@ -127,6 +126,45 @@ namespace RemoteLink.Host.Services
                 .ToListAsync(cancellationToken);
 
             return transfers.Select(ToResponse).ToList();
+        }
+        
+        public async Task<TransferJobResponse> ApplyRemoteDecisionAsync(Guid authenticatedDeviceId, TransferDecisionNotification notification, CancellationToken cancellationToken = default)
+        {
+            if (authenticatedDeviceId == Guid.Empty ||
+                trustedDevices.GetDevice(authenticatedDeviceId) is not { IsTrusted: true })
+            {
+                throw new UnauthorizedAccessException("Device is not trusted.");
+            }
+
+            if (notification.TransferId == Guid.Empty || notification.SenderDeviceId != identity.DeviceId || notification.RecipientDeviceId != authenticatedDeviceId)
+            {
+                throw new ArgumentException("Invalid transfer decision identity.");
+            }
+
+            TransferJob transfer = await database.TransferJobs.Include(t => t.Items).FirstOrDefaultAsync(t => t.Id == notification.TransferId, cancellationToken) ?? throw new KeyNotFoundException("Transfer not found.");
+
+            if (transfer.Direction != TransferDirection.Outgoing || transfer.RemoteDeviceId != authenticatedDeviceId)
+            {
+                throw new InvalidOperationException("Transfer does not belong to the authenticated device.");
+            }
+
+            TransferStatus desiredStatus = notification.Accepted ? TransferStatus.Accepted : TransferStatus.Rejected;
+
+            if (transfer.Status == desiredStatus)
+            {
+                return ToResponse(transfer);
+            }
+
+            if (transfer.Status != TransferStatus.AwaitingApproval)
+            {
+                throw new InvalidOperationException("Transfer is not awaiting approval.");
+            }
+
+            transfer.Status = desiredStatus;
+
+            await database.SaveChangesAsync(cancellationToken);
+
+            return ToResponse(transfer);
         }
 
         private static TransferJobResponse ToResponse(TransferJob transfer)

@@ -42,4 +42,9 @@ contextBridge.exposeInMainWorld("remoteLink", {
             ipcRenderer.removeListener("chat:conversation-changed", listener);
         };
     },
+
+    selectTransferFile: () => ipcRenderer.invoke("transfers:select-file"),
+    getTransfers: () => ipcRenderer.invoke("transfers:get-all"),
+    sendTransferFile: (deviceId, sourcePath) => ipcRenderer.invoke("transfers:send-file", deviceId, sourcePath),
+    decideTransfer: (transferId, accepted) => ipcRenderer.invoke("transfers:decide", transferId, accepted),
 });
