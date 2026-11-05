@@ -56,6 +56,7 @@ namespace RemoteLink.Host
             builder.Services.AddSingleton<TransferSourceRegistry>();
 
             builder.Services.AddHostedService(provider => provider.GetRequiredService<LanDiscoveryService>());
+            builder.Services.AddHostedService<TransferCoordinator>();
             
             builder.Services.AddSignalR();
             

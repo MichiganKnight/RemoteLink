@@ -141,7 +141,35 @@ namespace RemoteLink.Host.Controllers
 
             await using (FileStream output = new(temporaryPath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 1024 * 1024, useAsync: true))
             {
-                await Request.Body.CopyToAsync(output, cancellationToken);
+                
+                byte[] buffer = new byte[1024 * 1024];
+                long remaining = item.SizeBytes;
+
+                while (remaining > 0)
+                {
+                    int bytesToRead = (int)Math.Min(buffer.Length, remaining);
+
+                    int bytesRead = await Request.Body.ReadAsync(buffer.AsMemory(0, bytesToRead), cancellationToken);
+
+                    if (bytesRead == 0)
+                    {
+                        break;
+                    }
+
+                    await output.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
+
+                    remaining -= bytesRead;
+                }
+
+                if (remaining != 0)
+                {
+                    return BadRequest("Received file size mismatch.");
+                }
+
+                if (await Request.Body.ReadAsync(buffer.AsMemory(0, 1), cancellationToken) != 0)
+                {
+                    return BadRequest("Received more bytes than expected.");
+                }
             }
 
             FileInfo receivedFile = new(temporaryPath);
