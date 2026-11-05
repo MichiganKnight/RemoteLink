@@ -159,7 +159,7 @@ namespace RemoteLink.Host.Services
 
                 try
                 {
-                    acknowledgment = await connection.SendTransferFileAsync(transfer.Id, item.Id, sourcePath, bytes => Interlocked.Exchange(ref uploadedBytes, bytes), cancellationToken);
+                    acknowledgment = await connection.SendTransferFileAsync(transfer.Id, item.Id, sourcePath, sourceHash, bytes => Interlocked.Exchange(ref uploadedBytes, bytes), cancellationToken);
                 }
                 finally
                 {
@@ -178,11 +178,21 @@ namespace RemoteLink.Host.Services
                 }
 
                 item.Sha256 = sourceHash;
+                
+                database.ChangeTracker.Clear();
 
-                item.TransferredBytes = item.SizeBytes;
-                transfer.TransferredBytes = item.SizeBytes;
-                transfer.Status = TransferStatus.Completed;
-                transfer.CompletedUtc = DateTime.UtcNow;
+                TransferJob finalTransfer = await database.TransferJobs.Include(t => t.Items)
+                    .FirstAsync(t => t.Id == transferId, cancellationToken);
+
+                TransferItem finalItem = finalTransfer.Items.Single(i => i.Id == item.Id);
+
+                finalItem.Sha256 = sourceHash;
+                finalItem.TransferredBytes = finalItem.SizeBytes;
+
+                finalTransfer.TransferredBytes = finalTransfer.TotalBytes;
+                finalTransfer.Status = TransferStatus.Completed;
+                finalTransfer.CompletedUtc = DateTime.UtcNow;
+                finalTransfer.ErrorMessage = null;
 
                 await database.SaveChangesAsync(cancellationToken);
 
@@ -239,12 +249,12 @@ namespace RemoteLink.Host.Services
         {
             await using AsyncServiceScope scope = scopeFactory.CreateAsyncScope();
 
-            RemoteLinkDbContext database = scope.ServiceProvider.GetRequiredService<RemoteLinkDbContext>();
-            
-            await database.TransferJobs.Where(t => t.Id == transferId && t.Status == TransferStatus.Transferring)
+            RemoteLinkDbContext progressDatabase = scope.ServiceProvider.GetRequiredService<RemoteLinkDbContext>();
+
+            await progressDatabase.TransferJobs.Where(t => t.Id == transferId && t.Status == TransferStatus.Transferring)
                 .ExecuteUpdateAsync(setters => setters.SetProperty(t => t.TransferredBytes, bytes), cancellationToken);
 
-            await database.Set<TransferItem>().Where(i => i.Id == itemId)
+            await progressDatabase.Set<TransferItem>().Where(i => i.Id == itemId && i.TransferId == transferId && progressDatabase.TransferJobs.Any(t => t.Id == i.TransferId && t.Status == TransferStatus.Transferring))
                 .ExecuteUpdateAsync(setters => setters.SetProperty(i => i.TransferredBytes, bytes), cancellationToken);
         }
     }

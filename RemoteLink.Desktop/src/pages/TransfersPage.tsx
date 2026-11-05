@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { TransferJob, TrustedDevice } from "../types/electron";
 
@@ -44,6 +44,49 @@ function errorMessage(error: unknown): string {
     return error instanceof Error ? error.message : "Unexpected error.";
 }
 
+interface TransferStatistics {
+    bytesPerSecond: number;
+    etaSeconds: number | null;
+}
+
+interface TransferSample {
+    bytes: number;
+    timestamp: number;
+    bytesPerSecond: number;
+}
+
+function formatSpeed(bytesPerSecond: number): string {
+    if (!Number.isFinite(bytesPerSecond) || bytesPerSecond <= 0) {
+        return "Calculating...";
+    }
+
+    return `${formatBytes(bytesPerSecond)}/s`;
+}
+
+function formatEta(seconds: number | null): string {
+    if (seconds === null || !Number.isFinite(seconds)) {
+        return "Calculating...";
+    }
+
+    const rounded = Math.max(0, Math.ceil(seconds));
+
+    if (rounded < 60) {
+        return `${rounded}s remaining`;
+    }
+
+    const minutes = Math.floor(rounded / 60);
+    const remainingSeconds = rounded % 60;
+
+    if (minutes < 60) {
+        return `${minutes}m ${remainingSeconds}s remaining`;
+    }
+
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+
+    return `${hours}h ${remainingMinutes}m remaining`;
+}
+
 export default function TransfersPage() {
     const [devices, setDevices] = useState<TrustedDevice[]>([]);
     const [transfers, setTransfers] = useState<TransferJob[]>([]);
@@ -56,6 +99,65 @@ export default function TransfersPage() {
     const [decidingId, setDecidingId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
+    const [statistics, setStatistics] = useState<Record<string, TransferStatistics>>({});
+
+    const samplesRef = useRef<Map<string, TransferSample>>(new Map());
+
+    const updateStatistics = useCallback((jobs: TransferJob[]) => {
+        const now = performance.now();
+
+        const nextStatistics: Record<string, TransferStatistics> = {};
+        const activeIds = new Set<string>();
+
+        for (const transfer of jobs) {
+            if (transfer.status !== 3) {
+                continue;
+            }
+
+            activeIds.add(transfer.id);
+
+            const previous = samplesRef.current.get(transfer.id);
+
+            let bytesPerSecond = previous?.bytesPerSecond ?? 0;
+
+            if (previous) {
+                const elapsedSeconds = (now - previous.timestamp) / 1000;
+                const bytesChanged = transfer.transferredBytes - previous.bytes;
+
+                if (bytesChanged < 0) {
+                    bytesPerSecond = 0;
+                } else if (elapsedSeconds > 0) {
+                    const instantaneousSpeed = bytesChanged / elapsedSeconds;
+
+                    bytesPerSecond = previous.bytesPerSecond > 0 ? previous.bytesPerSecond * 0.6 + instantaneousSpeed * 0.4 : instantaneousSpeed;
+                }
+            }
+
+            const remainingBytes = Math.max(0, transfer.totalBytes - transfer.transferredBytes);
+
+            const etaSeconds = remainingBytes > 0 && bytesPerSecond > 0 ? remainingBytes / bytesPerSecond : null;
+
+            nextStatistics[transfer.id] = {
+                bytesPerSecond,
+                etaSeconds
+            };
+
+            samplesRef.current.set(transfer.id, {
+                bytes: transfer.transferredBytes,
+                timestamp: now,
+                bytesPerSecond
+            });
+        }
+
+        for (const id of samplesRef.current.keys()) {
+            if (!activeIds.has(id)) {
+                samplesRef.current.delete(id);
+            }
+        }
+
+        setStatistics(nextStatistics);
+    }, []);
+
     const refresh = useCallback(async () => {
         const [trusted, jobs] = await Promise.all([
             window.remoteLink.getTrustedDevices(),
@@ -64,7 +166,8 @@ export default function TransfersPage() {
 
         setDevices(trusted.filter(device => device.isTrusted));
         setTransfers(jobs);
-    }, []);
+        updateStatistics(jobs);
+    }, [updateStatistics]);
 
     useEffect(() => {
         let cancelled = false;
@@ -80,6 +183,7 @@ export default function TransfersPage() {
 
                 setDevices(trusted.filter(device => device.isTrusted));
                 setTransfers(jobs);
+                updateStatistics(jobs);
                 setError(null);
             } catch (error) {
                 if (!cancelled) {
@@ -102,7 +206,7 @@ export default function TransfersPage() {
             cancelled = true;
             window.clearInterval(interval);
         };
-    }, []);
+    }, [updateStatistics]);
 
     async function chooseFile() {
         try {
@@ -286,6 +390,8 @@ export default function TransfersPage() {
                     <div className="d-flex flex-column gap-3">
                         {history.map(transfer => {
                             const percent = transfer.totalBytes > 0 ? Math.min(100, (transfer.transferredBytes / transfer.totalBytes) * 100) : transfer.status === 5 ? 100 : 0;
+                            const stats = statistics[transfer.id];
+                            const isTransferring = transfer.status === 3;
 
                             return (
                                 <div className="transfer-history-item" key={transfer.id}>
@@ -320,6 +426,24 @@ export default function TransfersPage() {
 
                                         <span>{Math.round(percent)}%</span>
                                     </div>
+
+                                    {isTransferring && (
+                                        <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
+                                            <div className="small text-secondary">
+                                                <i className={`bi ${transfer.direction === 0 ? "bi-arrow-down-circle" : "bi-arrow-up-circle"} me-2`} />
+
+                                                {transfer.direction === 0 ? "Download" : "Upload"}
+                                                {" "}
+
+                                                Speed: {formatSpeed(stats?.bytesPerSecond ?? 0)}
+                                            </div>
+
+                                            <div className="small text-secondary">
+                                                <i className="bi bi-clock me-2" />
+                                                {formatEta(stats?.etaSeconds ?? null)}
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {transfer.errorMessage && (
                                         <div className="text-danger small mt-2">

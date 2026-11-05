@@ -1,3 +1,6 @@
+using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RemoteLink.Core.Models.Transfers;
@@ -9,8 +12,10 @@ namespace RemoteLink.Host.Controllers
 {
     [ApiController]
     [Route("api/lan/transfers")]
-    public sealed class LanTransferController(PeerAuthenticationService authentication, TransferService transfers, TransferStorageService storage, RemoteLinkDbContext database) : ControllerBase
+    public sealed class LanTransferController(PeerAuthenticationService authentication, TransferService transfers, TransferStorageService storage, RemoteLinkDbContext database, IServiceScopeFactory scopeFactory) : ControllerBase
     {
+        private static readonly ConcurrentDictionary<Guid, byte> ActiveUploads = new();
+
         [HttpPost("offers")]
         public async Task<IActionResult> ReceiveOffer([FromBody] IncomingTransferRequest request, CancellationToken cancellationToken)
         {
@@ -49,7 +54,7 @@ namespace RemoteLink.Host.Controllers
                 return BadRequest("Transfer size exceeds supported limits.");
             }
         }
-        
+
         [HttpPost("{transferId:guid}/decision")]
         public async Task<IActionResult> ReceiveDecision(Guid transferId, [FromBody] TransferDecisionNotification notification, CancellationToken cancellationToken)
         {
@@ -93,7 +98,7 @@ namespace RemoteLink.Host.Controllers
                 return Conflict(exception.Message);
             }
         }
-        
+
         [HttpPut("{transferId:guid}/items/{itemId:guid}/content")]
         [RequestSizeLimit(long.MaxValue)]
         public async Task<IActionResult> ReceiveFileContent(Guid transferId, Guid itemId, CancellationToken cancellationToken)
@@ -120,7 +125,7 @@ namespace RemoteLink.Host.Controllers
                 return NotFound();
             }
 
-            if (transfer.Direction != TransferDirection.Incoming || transfer.RemoteDeviceId != authenticatedDeviceId || transfer.Status is not (TransferStatus.Accepted or TransferStatus.Transferring))
+            if (transfer.Direction != TransferDirection.Incoming || transfer.RemoteDeviceId != authenticatedDeviceId || transfer.Status != TransferStatus.Accepted)
             {
                 return StatusCode(403);
             }
@@ -137,79 +142,202 @@ namespace RemoteLink.Host.Controllers
                 return BadRequest("File size does not match transfer metadata.");
             }
 
-            string temporaryPath = storage.GetTemporaryFilePath(transferId, itemId);
+            string expectedHash = Request.Headers["X-File-Sha256"].ToString();
 
-            await using (FileStream output = new(temporaryPath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 1024 * 1024, useAsync: true))
+            if (expectedHash.Length != 64 || !expectedHash.All(Uri.IsHexDigit))
             {
-                
-                byte[] buffer = new byte[1024 * 1024];
-                long remaining = item.SizeBytes;
+                return BadRequest("Missing or invalid SHA-256 header.");
+            }
 
-                while (remaining > 0)
+            if (!ActiveUploads.TryAdd(transferId, 0))
+            {
+                return Conflict("This transfer is already being received.");
+            }
+
+            string? temporaryPath = null;
+            bool completed = false;
+            bool started = false;
+
+            try
+            {
+                if (transfer.Items.Count != 1)
                 {
-                    int bytesToRead = (int)Math.Min(buffer.Length, remaining);
+                    return BadRequest("Only single-file transfers are currently supported.");
+                }
 
-                    int bytesRead = await Request.Body.ReadAsync(buffer.AsMemory(0, bytesToRead), cancellationToken);
+                temporaryPath = storage.GetTemporaryFilePath(transferId, itemId);
 
-                    if (bytesRead == 0)
+                transfer.Status = TransferStatus.Transferring;
+                transfer.StartedUtc ??= DateTime.UtcNow;
+                transfer.ErrorMessage = null;
+
+                await database.SaveChangesAsync(cancellationToken);
+                started = true;
+
+                byte[] buffer = new byte[1024 * 1024];
+                long receivedBytes = 0;
+                long lastSavedBytes = 0;
+
+                Stopwatch progressClock = Stopwatch.StartNew();
+                TimeSpan progressInterval = TimeSpan.FromMilliseconds(500);
+
+                await using (FileStream output = new(temporaryPath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 1024 * 1024, useAsync: true))
+                {
+                    long remaining = item.SizeBytes;
+
+                    while (remaining > 0)
                     {
-                        break;
+                        int requested = (int)Math.Min(buffer.Length, remaining);
+
+                        int read = await Request.Body.ReadAsync(buffer.AsMemory(0, requested), cancellationToken);
+
+                        if (read == 0)
+                        {
+                            throw new EndOfStreamException("The sender disconnected before the file was fully received.");
+                        }
+
+                        await output.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+
+                        receivedBytes += read;
+                        remaining -= read;
+
+                        if (progressClock.Elapsed >= progressInterval)
+                        {
+                            await SaveIncomingProgressAsync(transferId, itemId, receivedBytes, cancellationToken);
+
+                            lastSavedBytes = receivedBytes;
+                            progressClock.Restart();
+                        }
                     }
 
-                    await output.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
+                    if (await Request.Body.ReadAsync(buffer.AsMemory(0, 1), cancellationToken) != 0)
+                    {
+                        throw new InvalidDataException("Received more bytes than the approved file size.");
+                    }
 
-                    remaining -= bytesRead;
+                    await output.FlushAsync(cancellationToken);
                 }
 
-                if (remaining != 0)
+                if (lastSavedBytes != receivedBytes)
                 {
-                    return BadRequest("Received file size mismatch.");
+                    await SaveIncomingProgressAsync(transferId, itemId, receivedBytes, cancellationToken);
                 }
 
-                if (await Request.Body.ReadAsync(buffer.AsMemory(0, 1), cancellationToken) != 0)
+                string actualHash = await TransferStorageService.CalculateSha256Async(temporaryPath, cancellationToken);
+
+                byte[] expectedHashBytes = Convert.FromHexString(expectedHash);
+                byte[] actualHashBytes = Convert.FromHexString(actualHash);
+
+                if (!CryptographicOperations.FixedTimeEquals(expectedHashBytes, actualHashBytes))
                 {
-                    return BadRequest("Received more bytes than expected.");
+                    throw new InvalidDataException("SHA-256 verification failed. Received file was not saved.");
+                }
+
+                string destination = storage.GetCompletedFilePath(item.RelativePath);
+
+                System.IO.File.Move(temporaryPath, destination);
+                temporaryPath = null;
+
+                database.ChangeTracker.Clear();
+
+                TransferJob finalTransfer = await database.TransferJobs.Include(t => t.Items)
+                    .FirstAsync(t => t.Id == transferId, cancellationToken);
+
+                TransferItem finalItem = finalTransfer.Items.Single(i => i.Id == itemId);
+
+                finalItem.TransferredBytes = item.SizeBytes;
+                finalItem.Sha256 = actualHash;
+
+                finalTransfer.TransferredBytes = item.SizeBytes;
+                finalTransfer.Status = TransferStatus.Completed;
+                finalTransfer.CompletedUtc = DateTime.UtcNow;
+                finalTransfer.ErrorMessage = null;
+
+                await database.SaveChangesAsync(cancellationToken);
+
+                completed = true;
+
+                return Ok(new TransferFileAcknowledgment(transferId, itemId, item.SizeBytes, actualHash, true));
+            }
+            catch (OperationCanceledException)
+            {
+                if (started && !completed)
+                {
+                    await MarkIncomingFailedAsync(transferId, "File transfer was interrupted.");
+                }
+
+                throw;
+            }
+            catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException or CryptographicException)
+            {
+                if (started && !completed)
+                {
+                    await MarkIncomingFailedAsync(transferId, exception.Message);
+                }
+
+                return StatusCode(StatusCodes.Status422UnprocessableEntity, exception.Message);
+            }
+            finally
+            {
+                ActiveUploads.TryRemove(transferId, out _);
+
+                if (temporaryPath is not null)
+                {
+                    try
+                    {
+                        if (System.IO.File.Exists(temporaryPath))
+                        {
+                            System.IO.File.Delete(temporaryPath);
+                        }
+                    }
+                    catch (IOException)
+                    {
+                        // Cleanup can be retried during maintenance.
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        // Cleanup can be retried during maintenance.
+                    }
                 }
             }
+        }
 
-            FileInfo receivedFile = new(temporaryPath);
+        private async Task SaveIncomingProgressAsync(Guid transferId, Guid itemId, long bytes, CancellationToken cancellationToken)
+        {
+            await using AsyncServiceScope scope = scopeFactory.CreateAsyncScope();
 
-            if (receivedFile.Length != item.SizeBytes)
+            RemoteLinkDbContext progressDatabase = scope.ServiceProvider.GetRequiredService<RemoteLinkDbContext>();
+
+            int updated = await progressDatabase.TransferJobs.Where(t => t.Id == transferId && t.Status == TransferStatus.Transferring)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(t => t.TransferredBytes, bytes), cancellationToken);
+
+            if (updated == 0)
             {
-                return BadRequest("Received file size mismatch.");
+                throw new InvalidOperationException("Incoming transfer is no longer active.");
             }
 
-            string hash = await TransferStorageService.CalculateSha256Async(temporaryPath, cancellationToken);
+            await progressDatabase.Set<TransferItem>().Where(i => i.Id == itemId && i.TransferId == transferId)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(i => i.TransferredBytes, bytes), cancellationToken);
+        }
 
-            string destination = storage.GetCompletedFilePath(item.RelativePath);
-
-            System.IO.File.Move(temporaryPath, destination);
-
-            item.TransferredBytes = item.SizeBytes;
-            item.Sha256 = hash;
-
-            transfer.TransferredBytes = transfer.Items.Where(i => !i.IsDirectory)
-                .Sum(i => i.TransferredBytes);
-
-            transfer.Status = transfer.TransferredBytes == transfer.TotalBytes ? TransferStatus.Completed : TransferStatus.Transferring;
-
-            transfer.StartedUtc ??= DateTime.UtcNow;
-
-            if (transfer.Status == TransferStatus.Completed)
+        private async Task MarkIncomingFailedAsync(Guid transferId, string message)
+        {
+            try
             {
-                transfer.CompletedUtc = DateTime.UtcNow;
+                await using AsyncServiceScope scope = scopeFactory.CreateAsyncScope();
+
+                RemoteLinkDbContext failureDatabase = scope.ServiceProvider.GetRequiredService<RemoteLinkDbContext>();
+
+                string error = message.Length > 2048 ? message[..2048] : message;
+
+                await failureDatabase.TransferJobs.Where(t => t.Id == transferId && t.Status == TransferStatus.Transferring)
+                    .ExecuteUpdateAsync(setters => setters.SetProperty(t => t.Status, TransferStatus.Failed).SetProperty(t => t.ErrorMessage, error));
             }
-
-            await database.SaveChangesAsync(cancellationToken);
-
-            return Ok(new
+            catch (Exception)
             {
-                transferId,
-                itemId,
-                receivedBytes = item.SizeBytes,
-                sha256 = hash,
-                completed = transfer.Status == TransferStatus.Completed
-            });
+                // Preserve the original transfer error.
+                // Production logging can be added here.
+            }
         }
     }
 }

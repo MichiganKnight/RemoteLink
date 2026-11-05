@@ -128,7 +128,7 @@ namespace RemoteLink.Host.Services
             return result ?? throw new InvalidOperationException("Remote device returned an empty decision response.");
         }
         
-        public async Task<TransferFileAcknowledgment> SendTransferFileAsync(Guid transferId, Guid itemId, string sourcePath, Action<long>? onProgress = null, CancellationToken cancellationToken = default)
+        public async Task<TransferFileAcknowledgment> SendTransferFileAsync(Guid transferId, Guid itemId, string sourcePath, string expectedSha256, Action<long>? onProgress = null, CancellationToken cancellationToken = default)
         {
             if (_session.ExpiresUtc <= DateTime.UtcNow)
             {
@@ -153,6 +153,13 @@ namespace RemoteLink.Host.Services
             request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
 
             request.Content.Headers.ContentLength = expectedLength;
+            
+            if (expectedSha256.Length != 64 || !expectedSha256.All(Uri.IsHexDigit))
+            {
+                throw new ArgumentException("Expected SHA-256 must contain 64 hexadecimal characters.", nameof(expectedSha256));
+            }
+
+            request.Headers.Add("X-File-Sha256", expectedSha256);
 
             using HttpResponseMessage response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
